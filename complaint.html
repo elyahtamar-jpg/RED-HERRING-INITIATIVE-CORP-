@@ -1,664 +1,253 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>File a Complaint – Red Herring Initiative</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root {
-      --bg: #050608;
-      --panel: #111827;
-      --accent: #e11d48;
-      --accent-soft: #f97373;
-      --border: #4b5563;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Red Herring Civil Rights Intake</title>
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+<style>
+body {
+  background: #0a0a0a;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
 
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top left, rgba(248, 113, 113, 0.15), #020617 50%, #000 100%);
-      color: var(--text-main);
-      line-height: 1.6;
-    }
+.header {
+  padding: 20px;
+  text-align: center;
+  background: #111;
+  border-bottom: 2px solid #b30000;
+}
 
-    header {
-      background: #020617;
-      border-bottom: 2px solid var(--accent);
-      padding: 1rem 1.5rem;
-    }
+#chat-container {
+  width: 90%;
+  max-width: 600px;
+  background: #111;
+  margin: 30px auto;
+  border: 1px solid #b30000;
+  border-radius: 8px;
+  padding: 15px;
+}
 
-    .container {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 1.5rem;
-    }
+.message {
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  line-height: 1.4;
+}
 
-    header .brand {
-      font-size: 0.9rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--accent-soft);
-    }
+.bot {
+  background: #1a1a1a;
+  border-left: 4px solid #b30000;
+}
 
-    header .sub {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-top: 0.15rem;
-    }
+.user {
+  background: #222;
+  border-right: 4px solid #555;
+  text-align: right;
+}
 
-    h1 {
-      font-size: clamp(1.8rem, 3vw + 0.5rem, 2.4rem);
-      margin-bottom: 0.4rem;
-    }
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  margin-top: 10px;
+}
 
-    h1 span {
-      color: var(--accent-soft);
-    }
+.controls button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  background: #b30000;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+}
 
-    .lead {
-      max-width: 42rem;
-      font-size: 0.95rem;
-      color: var(--text-muted);
-      margin-bottom: 1.3rem;
-    }
+#input-area {
+  display: flex;
+  gap: 10px;
+}
 
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(0, 1.3fr);
-      gap: 1.5rem;
-      align-items: flex-start;
-    }
+#user-input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+}
 
-    .panel {
-      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.95), #020617 55%);
-      border-radius: 1.1rem;
-      border: 1px solid rgba(148, 163, 184, 0.55);
-      padding: 1.1rem 1.2rem;
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.65);
-    }
+#send-btn {
+  background: #b30000;
+  color: #fff;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
 
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 0.75rem;
-      gap: 0.5rem;
-    }
-
-    .panel-title {
-      font-size: 0.95rem;
-      font-weight: 600;
-    }
-
-    .badge {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      border-radius: 999px;
-      border: 1px solid rgba(248, 250, 252, 0.25);
-      padding: 0.18rem 0.55rem;
-      color: var(--text-muted);
-    }
-
-    .chat-window {
-      background: rgba(15, 23, 42, 0.96);
-      border-radius: 0.9rem;
-      border: 1px solid rgba(55, 65, 81, 0.9);
-      padding: 0.9rem;
-      height: 380px;
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      overflow: hidden;
-    }
-
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding-right: 0.25rem;
-      font-size: 0.85rem;
-    }
-
-    .msg-row {
-      display: flex;
-      margin-bottom: 0.5rem;
-    }
-
-    .msg-row.agent {
-      justify-content: flex-start;
-    }
-
-    .msg-row.user {
-      justify-content: flex-end;
-    }
-
-    .msg-bubble {
-      max-width: 80%;
-      padding: 0.55rem 0.7rem;
-      border-radius: 0.8rem;
-      line-height: 1.4;
-    }
-
-    .agent .msg-bubble {
-      background: #020617;
-      border: 1px solid rgba(75, 85, 99, 0.9);
-      border-top-left-radius: 0.2rem;
-      color: var(--text-main);
-      font-size: 0.83rem;
-    }
-
-    .user .msg-bubble {
-      background: linear-gradient(to right, #ef4444, #b91c1c);
-      border-radius: 0.8rem 0.2rem 0.8rem 0.8rem;
-      color: #fef2f2;
-      font-size: 0.83rem;
-    }
-
-    .note {
-      font-size: 0.76rem;
-      color: var(--text-muted);
-      margin-top: 0.4rem;
-    }
-
-    .chat-input-row {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 0.4rem;
-      flex-wrap: wrap;
-    }
-
-    .chat-input-row input {
-      flex: 1;
-      min-width: 140px;
-      padding: 0.55rem 0.7rem;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.7);
-      background: #020617;
-      color: var(--text-main);
-      font-size: 0.85rem;
-    }
-
-    .chat-input-row input::placeholder {
-      color: #6b7280;
-    }
-
-    .btn {
-      border-radius: 999px;
-      padding: 0.5rem 0.85rem;
-      font-size: 0.78rem;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      white-space: nowrap;
-    }
-
-    .btn-primary {
-      background: linear-gradient(to right, #ef4444, #b91c1c);
-      color: #fff;
-      box-shadow: 0 12px 35px rgba(239, 68, 68, 0.5);
-    }
-
-    .btn-soft {
-      background: rgba(15, 23, 42, 0.95);
-      color: var(--accent-soft);
-      border: 1px solid rgba(248, 113, 113, 0.55);
-    }
-
-    .side-panel h2 {
-      font-size: 1rem;
-      margin-bottom: 0.4rem;
-    }
-
-    .side-panel p {
-      font-size: 0.84rem;
-      color: var(--text-muted);
-      margin-bottom: 0.5rem;
-    }
-
-    .side-panel ul {
-      list-style: disc;
-      padding-left: 1.2rem;
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      margin-bottom: 0.8rem;
-    }
-
-    .summary-box {
-      background: rgba(15, 23, 42, 0.95);
-      border-radius: 0.8rem;
-      border: 1px dashed rgba(148, 163, 184, 0.7);
-      padding: 0.7rem 0.75rem;
-      margin-top: 0.6rem;
-      font-size: 0.78rem;
-      max-height: 150px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-    }
-
-    footer {
-      border-top: 1px solid rgba(30, 64, 175, 0.5);
-      padding: 1.3rem 1.5rem 2rem;
-      background: #020617;
-      margin-top: 2rem;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      text-align: center;
-    }
-
-    /* Floating helper bubble */
-    .helper-bubble {
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      z-index: 40;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 0.4rem;
-      font-size: 0.8rem;
-    }
-
-    .helper-panel {
-      background: #020617;
-      border-radius: 0.8rem;
-      border: 1px solid rgba(148, 163, 184, 0.7);
-      padding: 0.7rem 0.9rem;
-      max-width: 260px;
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
-      display: none;
-    }
-
-    .helper-panel p {
-      color: var(--text-muted);
-      font-size: 0.8rem;
-      margin-bottom: 0.4rem;
-    }
-
-    .helper-toggle {
-      border-radius: 999px;
-      padding: 0.6rem 0.9rem;
-      border: none;
-      cursor: pointer;
-      background: linear-gradient(to right, #ef4444, #b91c1c);
-      color: #fef2f2;
-      box-shadow: 0 12px 30px rgba(239, 68, 68, 0.6);
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-
-    @media (max-width: 900px) {
-      .layout {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .side-panel {
-        order: -1;
-      }
-    }
-
-    @media (max-width: 640px) {
-      .container {
-        padding-inline: 1.1rem;
-      }
-
-      header {
-        padding-inline: 1.1rem;
-      }
-    }
-  </style>
+#floating-help {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #b30000;
+  padding: 12px;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+}
+</style>
 </head>
 
 <body>
-  <header>
-    <div class="container">
-      <div class="brand">RED HERRING INITIATIVE CORP</div>
-      <div class="sub">Civil Justice Advocacy • Complaint & Civil Rights Intake Portal</div>
-    </div>
-  </header>
 
-  <main>
-    <div class="container">
-      <h1><span>File a Complaint</span> – Civil Rights Under 18 U.S.C. § 242</h1>
-      <p class="lead">
-        Use this page to document a possible civil rights violation under
-        <strong>18 U.S.C. § 242 (Deprivation of Rights Under Color of Law)</strong>.
-        Helyah, our intake assistant, will guide you through key questions so your complaint
-        is organized and ready for review by the appropriate division.
-      </p>
+<div class="header">
+  <h2>Helyah – Civil Rights Intake Assistant</h2>
+</div>
 
-      <div class="layout">
-        <!-- LEFT: Intake Assistant -->
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <div class="panel-title">Helyah – Civil Rights Intake Assistant</div>
-              <div class="note">
-                Answer each question in your own words. You can copy your full complaint at the end.
-                Audio features work best in Chrome or Edge.
-              </div>
-            </div>
-            <div class="badge">Formal Intake • 18 U.S.C. § 242</div>
-          </div>
+<div id="chat-container"></div>
 
-          <div class="chat-window">
-            <div id="chat-messages" class="chat-messages"></div>
+<div id="controls" class="controls">
+  <button id="read-btn">🔊 Read</button>
+  <button id="speak-btn">🎙 Speak</button>
+  <button id="voice-mode-btn">🎧 Voice Mode: OFF</button>
+</div>
 
-            <div>
-              <div class="chat-input-row">
-                <input id="chat-input" type="text" placeholder="Type or use the mic, then press Send…" />
+<div id="input-area">
+  <input type="text" id="user-input" placeholder="Type your response..." />
+  <button id="send-btn">Send</button>
+</div>
 
-                <button id="chat-send" class="btn btn-primary" type="button">
-                  <span>Send</span> <span>➤</span>
-                </button>
+<div id="floating-help">💬</div>
 
-                <button id="tts-last" class="btn btn-soft" type="button" title="Read last Helyah message">
-                  🔊 Read
-                </button>
+<script>
+// ---------------------------------------------
+// ANDROID AUDIO UNLOCK PATCH
+// ---------------------------------------------
+let unlocked = false;
+function unlockAudio() {
+  if (!unlocked) {
+    const ctx = new AudioContext();
+    const source = ctx.createBufferSource();
+    source.buffer = ctx.createBuffer(1, 1, 22050);
+    source.connect(ctx.destination);
+    source.start(0);
+    unlocked = true;
+  }
+}
+document.body.addEventListener("click", unlockAudio);
+document.body.addEventListener("touchstart", unlockAudio);
 
-                <button id="mic-btn" class="btn btn-soft" type="button" title="Speak your answer">
-                  🎙 Speak
-                </button>
+// ---------------------------------------------
+// TEXT-TO-SPEECH ENGINE
+// ---------------------------------------------
+function speakText(message) {
+  unlockAudio();
+  window.speechSynthesis.cancel();
 
-                <button id="voice-mode-btn" class="btn btn-soft" type="button" title="Toggle automatic voice mode">
-                  🎧 Voice Mode: Off
-                </button>
-              </div>
+  const utter = new SpeechSynthesisUtterance(message);
+  utter.pitch = 1;
+  utter.rate = 1;
+  utter.volume = 1;
 
-              <div class="note">
-                This intake does not create an attorney–client relationship and does not replace emergency services.
-                If anyone is in immediate danger, call 911. Audio features require microphone permission and may not
-                work in every browser.
-              </div>
-            </div>
-          </div>
+  // force voice list load
+  window.speechSynthesis.getVoices();
 
-          <div id="summary-section" style="display:none; margin-top:0.9rem;">
-            <div class="note" style="margin-bottom:0.25rem;">
-              Below is a structured summary of your responses. You can copy it for your records or email it to
-              Red Herring Initiative Corp when our dedicated intake email is live.
-            </div>
-            <div id="complaint-summary" class="summary-box"></div>
-            <div style="margin-top:0.45rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-              <button id="copy-summary" class="btn btn-soft" type="button">Copy Complaint Text</button>
-              <a id="email-summary" class="btn btn-soft"
-                 href="mailto:info@redherringciviljustice.com?subject=Civil Rights Complaint – Red Herring Initiative">
-                Email Placeholder
-              </a>
-            </div>
-          </div>
-        </section>
+  setTimeout(() => {
+    window.speechSynthesis.speak(utter);
+  }, 100);
+}
 
-        <!-- RIGHT: Info / Divisions / Guidance -->
-        <aside class="panel side-panel">
-          <h2>What This Intake Covers</h2>
-          <p>
-            This assistant focuses on situations where a government official, officer, or public servant may have
-            violated your rights while acting under state authority (“under color of law”).
-          </p>
+// ---------------------------------------------
+// SPEECH RECOGNITION ENGINE
+// ---------------------------------------------
+let recognition;
+try {
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
+} catch (e) {
+  console.log("Speech recognition not supported.");
+}
 
-          <ul>
-            <li>Excessive force, abuse, or cruel treatment in custody or detention.</li>
-            <li>Retaliation, threats, or punishment for exercising your rights.</li>
-            <li>Fabricated reports, falsified evidence, or misleading the court.</li>
-            <li>Unsafe conditions, medical neglect, or deliberate indifference.</li>
-          </ul>
+// ---------------------------------------------
+// CHAT SYSTEM
+// ---------------------------------------------
+const chat = document.getElementById("chat-container");
 
-          <p><strong>Red Herring Initiative divisions include:</strong></p>
-          <ul>
-            <li>Juvenile Justice Oversight</li>
-            <li>Social Services &amp; DCF</li>
-            <li>Corrections &amp; Detention</li>
-            <li>Public Services &amp; Agencies</li>
-            <li>Governmental &amp; Criminal Justice</li>
-          </ul>
+function addMessage(text, sender) {
+  const div = document.createElement("div");
+  div.className = `message ${sender}`;
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
 
-          <p>
-            After intake, your complaint can be routed internally for further review, pattern tracking,
-            or potential referral where appropriate. As systems come online, this page can connect directly
-            to division dashboards and email notifications.
-          </p>
-        </aside>
-      </div>
-    </div>
-  </main>
+addMessage(
+  "Welcome. I am Helyah, the civil-rights intake assistant. I will guide you through a formal 18 USC 242 complaint.",
+  "bot"
+);
 
-  <footer>
-    © 2025 Red Herring Initiative Corp. Registered Florida Civil Justice Advocacy Nonprofit Corporation.
-    All Rights Reserved.
-  </footer>
+// ---------------------------------------------
+// BUTTON LISTENERS
+// ---------------------------------------------
+document.getElementById("read-btn").addEventListener("click", () => {
+  const last = chat.lastChild?.textContent || "";
+  speakText(last);
+});
 
-  <!-- Floating helper bubble (conversational help) -->
-  <div class="helper-bubble">
-    <div id="helper-panel" class="helper-panel">
-      <p><strong>Helyah (Quick Help)</strong></p>
-      <p>
-        This space can later be connected to a live AI chatbot for general questions about the complaint process,
-        divisions, or civil rights. For now, it provides static guidance.
-      </p>
-      <p style="font-size:0.78rem;">
-        Tip: Include dates, names, locations, and any witnesses or documents you have. Speak clearly if using audio.
-      </p>
-    </div>
-    <button id="helper-toggle" class="helper-toggle" type="button">
-      <span>Need help?</span> <span>💬</span>
-    </button>
-  </div>
+document.getElementById("speak-btn").addEventListener("click", () => {
+  if (!recognition) return alert("Voice input not supported.");
 
-  <script>
-    // ------------ Intake Questions (18 U.S.C. 242 style) ------------
-    const questions = [
-      "To begin, please tell me your full name.",
-      "How can we contact you in the future? (phone, email, or mailing address)",
-      "Are you currently incarcerated, recently released, or in the community?",
-      "Which facility, agency, or location is your complaint about?",
-      "Who was involved? Please list officers, staff, caseworkers, judges, or others (if known).",
-      "On what date (or approximate date) did the main incident happen?",
-      "Please describe in your own words what happened. Include what each person did or failed to do.",
-      "How were your rights violated? (For example: excessive force, denial of medical care, retaliation, due process issues, unsafe conditions.)",
-      "Were there any witnesses? If yes, list their names and contact information if you have it.",
-      "Do you have any documents, photos, videos, or other evidence? Describe what you have and where it is.",
-      "Has this happened more than once or to other people as well? If yes, please explain.",
-      "What harm did this cause you (physical, emotional, legal, financial, or otherwise)?",
-      "What outcome are you hoping for? (For example: investigation, accountability, policy change, support, referral.)"
-    ];
+  recognition.start();
 
-    const answers = [];
-    let currentIndex = 0;
+  recognition.onresult = (event) => {
+    const text = event.results[0][0].transcript;
+    document.getElementById("user-input").value = text;
+  };
+});
 
-    const chatMessagesEl = document.getElementById("chat-messages");
-    const chatInputEl = document.getElementById("chat-input");
-    const chatSendBtn = document.getElementById("chat-send");
-    const summarySectionEl = document.getElementById("summary-section");
-    const summaryEl = document.getElementById("complaint-summary");
-    const copyBtn = document.getElementById("copy-summary");
-    const emailLink = document.getElementById("email-summary");
+// ---------------------------------------------
+// VOICE MODE
+// ---------------------------------------------
+let voiceMode = false;
+document.getElementById("voice-mode-btn").addEventListener("click", () => {
+  voiceMode = !voiceMode;
+  document.getElementById("voice-mode-btn").textContent =
+    voiceMode ? "🎧 Voice Mode: ON" : "🎧 Voice Mode: OFF";
 
-    // Audio flags & objects
-    let voiceModeOn = false;
-    let lastAgentMessage = "";
-    let recognition = null;
-    let recognizing = false;
+  if (voiceMode) {
+    const last = chat.lastChild?.textContent || "";
+    speakText(last);
+  }
+});
 
-    // Initialize Web Speech Recognition (if available)
-    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SR();
-      recognition.lang = "en-US";
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
+// ---------------------------------------------
+// SEND MESSAGE
+// ---------------------------------------------
+document.getElementById("send-btn").addEventListener("click", sendMessage);
 
-      recognition.addEventListener("result", (event) => {
-        const transcript = event.results[0][0].transcript;
-        chatInputEl.value = transcript;
-      });
+function sendMessage() {
+  const text = document.getElementById("user-input").value.trim();
+  if (!text) return;
 
-      recognition.addEventListener("end", () => {
-        recognizing = false;
-      });
-    }
+  addMessage(text, "user");
+  document.getElementById("user-input").value = "";
 
-    function speakText(text) {
-      if (!("speechSynthesis" in window)) return;
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.rate = 1.0;
-      utter.pitch = 1.0;
-      utter.volume = 1.0;
-      window.speechSynthesis.cancel(); // stop anything currently speaking
-      window.speechSynthesis.speak(utter);
-    }
+  // Helyah responds
+  setTimeout(() => {
+    const reply =
+      "Thank you. Please continue. I will compile your responses into a formal civil-rights complaint.";
+    addMessage(reply, "bot");
 
-    function addMessage(role, text) {
-      const row = document.createElement("div");
-      row.className = "msg-row " + role;
+    if (voiceMode) speakText(reply);
+  }, 500);
+}
+</script>
 
-      const bubble = document.createElement("div");
-      bubble.className = "msg-bubble";
-      bubble.textContent = text;
-
-      const wrapper = document.createElement("div");
-      wrapper.appendChild(bubble);
-      row.appendChild(wrapper);
-
-      chatMessagesEl.appendChild(row);
-      chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
-
-      if (role === "agent") {
-        lastAgentMessage = text;
-        if (voiceModeOn) {
-          speakText(text);
-        }
-      }
-    }
-
-    function askNextQuestion() {
-      if (currentIndex < questions.length) {
-        addMessage("agent", questions[currentIndex]);
-      } else {
-        buildSummary();
-      }
-    }
-
-    function buildSummary() {
-      summarySectionEl.style.display = "block";
-      let text = "CIVIL RIGHTS COMPLAINT – INTAKE SUMMARY\n\n";
-
-      const labels = [
-        "Complainant Name",
-        "Contact Information",
-        "Status (incarcerated / released / community)",
-        "Facility / Agency / Location",
-        "People Involved",
-        "Date of Incident",
-        "What Happened",
-        "Type of Rights Violation",
-        "Witnesses",
-        "Evidence",
-        "Pattern or Repeat Behavior",
-        "Harm Suffered",
-        "Requested Outcome"
-      ];
-
-      answers.forEach((ans, idx) => {
-        text += labels[idx] + ":\n" + ans + "\n\n";
-      });
-
-      summaryEl.textContent = text;
-
-      const mailBody = encodeURIComponent(text.slice(0, 4000));
-      emailLink.href =
-        "mailto:info@redherringciviljustice.com" +
-        "?subject=" +
-        encodeURIComponent("Civil Rights Complaint – Red Herring Initiative") +
-        "&body=" +
-        mailBody;
-
-      addMessage(
-        "agent",
-        "Thank you. Your intake summary is now ready below. You can copy it, save it, or email it when you are able. " +
-        "A human advocate may review it when our full systems are live."
-      );
-    }
-
-    function handleSend() {
-      const value = chatInputEl.value.trim();
-      if (!value) return;
-
-      addMessage("user", value);
-      answers.push(value);
-      chatInputEl.value = "";
-
-      currentIndex++;
-      if (currentIndex < questions.length) {
-        setTimeout(askNextQuestion, 350);
-      } else {
-        setTimeout(buildSummary, 400);
-      }
-    }
-
-    chatSendBtn.addEventListener("click", handleSend);
-    chatInputEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        handleSend();
-      }
-    });
-
-    copyBtn.addEventListener("click", () => {
-      const text = summaryEl.textContent;
-      if (!text) return;
-      navigator.clipboard.writeText(text).then(
-        () => alert("Complaint text copied to clipboard."),
-        () => alert("Unable to copy. You can manually select and copy the text.")
-      );
-    });
-
-    // Read last Helyah message
-    const ttsLastBtn = document.getElementById("tts-last");
-    ttsLastBtn.addEventListener("click", () => {
-      if (!lastAgentMessage) {
-        alert("No Helyah message to read yet.");
-        return;
-      }
-      speakText(lastAgentMessage);
-    });
-
-    // Mic input button
-    const micBtn = document.getElementById("mic-btn");
-    micBtn.addEventListener("click", () => {
-      if (!recognition) {
-        alert("Speech recognition is not supported in this browser. Try Chrome or Edge.");
-        return;
-      }
-      if (recognizing) {
-        recognition.stop();
-        recognizing = false;
-        micBtn.textContent = "🎙 Speak";
-      } else {
-        recognizing = true;
-        micBtn.textContent = "⏹ Stop";
-        recognition.start();
-      }
-    });
-
-    // Voice mode toggle (auto TTS for assistant)
-    const voiceModeBtn = document.getElementById("voice-mode-btn");
-    voiceModeBtn.addEventListener("click", () => {
-      voiceModeOn = !voiceModeOn;
-      voiceModeBtn.textContent = voiceModeOn ? "🎧 Voice Mode: On" : "🎧 Voice Mode: Off";
-      if (voiceModeOn && lastAgentMessage) {
-        speakText(lastAgentMessage);
-      } else if
+</body>
+</html>

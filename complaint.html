@@ -113,7 +113,7 @@
       border-radius: 0.9rem;
       border: 1px solid rgba(55, 65, 81, 0.9);
       padding: 0.9rem;
-      height: 360px;
+      height: 380px;
       display: flex;
       flex-direction: column;
       gap: 0.6rem;
@@ -162,20 +162,22 @@
       font-size: 0.83rem;
     }
 
-    .msg-meta {
-      font-size: 0.7rem;
+    .note {
+      font-size: 0.76rem;
       color: var(--text-muted);
-      margin-bottom: 0.15rem;
+      margin-top: 0.4rem;
     }
 
     .chat-input-row {
       display: flex;
       gap: 0.5rem;
       margin-top: 0.4rem;
+      flex-wrap: wrap;
     }
 
     .chat-input-row input {
       flex: 1;
+      min-width: 140px;
       padding: 0.55rem 0.7rem;
       border-radius: 999px;
       border: 1px solid rgba(148, 163, 184, 0.7);
@@ -190,14 +192,15 @@
 
     .btn {
       border-radius: 999px;
-      padding: 0.55rem 1rem;
-      font-size: 0.8rem;
+      padding: 0.5rem 0.85rem;
+      font-size: 0.78rem;
       font-weight: 600;
       border: none;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
+      white-space: nowrap;
     }
 
     .btn-primary {
@@ -206,16 +209,10 @@
       box-shadow: 0 12px 35px rgba(239, 68, 68, 0.5);
     }
 
-    .btn-outline {
-      background: transparent;
+    .btn-soft {
+      background: rgba(15, 23, 42, 0.95);
       color: var(--accent-soft);
-      border: 1px solid rgba(248, 113, 113, 0.6);
-    }
-
-    .note {
-      font-size: 0.76rem;
-      color: var(--text-muted);
-      margin-top: 0.4rem;
+      border: 1px solid rgba(248, 113, 113, 0.55);
     }
 
     .side-panel h2 {
@@ -337,9 +334,10 @@
     <div class="container">
       <h1><span>File a Complaint</span> – Civil Rights Under 18 U.S.C. § 242</h1>
       <p class="lead">
-        Use this page to document a possible civil rights violation under <strong>18 U.S.C. § 242
-        (Deprivation of Rights Under Color of Law)</strong>. Helyah, our intake assistant, will guide you
-        through key questions so your complaint is organized and ready for review by the appropriate division.
+        Use this page to document a possible civil rights violation under
+        <strong>18 U.S.C. § 242 (Deprivation of Rights Under Color of Law)</strong>.
+        Helyah, our intake assistant, will guide you through key questions so your complaint
+        is organized and ready for review by the appropriate division.
       </p>
 
       <div class="layout">
@@ -348,39 +346,55 @@
           <div class="panel-header">
             <div>
               <div class="panel-title">Helyah – Civil Rights Intake Assistant</div>
-              <div class="note">Answer each question in your own words. You can copy your full complaint at the end.</div>
+              <div class="note">
+                Answer each question in your own words. You can copy your full complaint at the end.
+                Audio features work best in Chrome or Edge.
+              </div>
             </div>
             <div class="badge">Formal Intake • 18 U.S.C. § 242</div>
           </div>
 
           <div class="chat-window">
-            <div id="chat-messages" class="chat-messages">
-              <!-- Messages will be injected here by JS -->
-            </div>
+            <div id="chat-messages" class="chat-messages"></div>
+
             <div>
               <div class="chat-input-row">
-                <input id="chat-input" type="text" placeholder="Type your answer here and press Send…" />
-                <button id="chat-send" class="btn btn-primary">
+                <input id="chat-input" type="text" placeholder="Type or use the mic, then press Send…" />
+
+                <button id="chat-send" class="btn btn-primary" type="button">
                   <span>Send</span> <span>➤</span>
                 </button>
+
+                <button id="tts-last" class="btn btn-soft" type="button" title="Read last Helyah message">
+                  🔊 Read
+                </button>
+
+                <button id="mic-btn" class="btn btn-soft" type="button" title="Speak your answer">
+                  🎙 Speak
+                </button>
+
+                <button id="voice-mode-btn" class="btn btn-soft" type="button" title="Toggle automatic voice mode">
+                  🎧 Voice Mode: Off
+                </button>
               </div>
+
               <div class="note">
                 This intake does not create an attorney–client relationship and does not replace emergency services.
-                If anyone is in immediate danger, call 911.
+                If anyone is in immediate danger, call 911. Audio features require microphone permission and may not
+                work in every browser.
               </div>
             </div>
           </div>
 
           <div id="summary-section" style="display:none; margin-top:0.9rem;">
             <div class="note" style="margin-bottom:0.25rem;">
-              Below is a structured summary of your responses. You can copy and save this for your records or to email
-              to Red Herring Initiative Corp when our intake email is live.
+              Below is a structured summary of your responses. You can copy it for your records or email it to
+              Red Herring Initiative Corp when our dedicated intake email is live.
             </div>
             <div id="complaint-summary" class="summary-box"></div>
             <div style="margin-top:0.45rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-              <button id="copy-summary" class="btn btn-outline">Copy Complaint Text</button>
-              <!-- Placeholder: you can change the address when ready -->
-              <a id="email-summary" class="btn btn-outline"
+              <button id="copy-summary" class="btn btn-soft" type="button">Copy Complaint Text</button>
+              <a id="email-summary" class="btn btn-soft"
                  href="mailto:info@redherringciviljustice.com?subject=Civil Rights Complaint – Red Herring Initiative">
                 Email Placeholder
               </a>
@@ -413,9 +427,9 @@
           </ul>
 
           <p>
-            After intake, your complaint can be routed internally for further review, pattern tracking, or potential
-            referral where appropriate. As systems come online, this page can connect directly to division dashboards
-            and email notifications.
+            After intake, your complaint can be routed internally for further review, pattern tracking,
+            or potential referral where appropriate. As systems come online, this page can connect directly
+            to division dashboards and email notifications.
           </p>
         </aside>
       </div>
@@ -432,20 +446,20 @@
     <div id="helper-panel" class="helper-panel">
       <p><strong>Helyah (Quick Help)</strong></p>
       <p>
-        This space can be connected to a live AI chatbot for general questions about the complaint process,
-        divisions, or civil rights. For now, it shows static guidance.
+        This space can later be connected to a live AI chatbot for general questions about the complaint process,
+        divisions, or civil rights. For now, it provides static guidance.
       </p>
       <p style="font-size:0.78rem;">
-        Tip: Answer honestly and include dates, names, locations, and any witnesses or documents you have.
+        Tip: Include dates, names, locations, and any witnesses or documents you have. Speak clearly if using audio.
       </p>
     </div>
-    <button id="helper-toggle" class="helper-toggle">
+    <button id="helper-toggle" class="helper-toggle" type="button">
       <span>Need help?</span> <span>💬</span>
     </button>
   </div>
 
   <script>
-    // Structured questions for 18 U.S.C. 242-style complaint
+    // ------------ Intake Questions (18 U.S.C. 242 style) ------------
     const questions = [
       "To begin, please tell me your full name.",
       "How can we contact you in the future? (phone, email, or mailing address)",
@@ -473,6 +487,40 @@
     const copyBtn = document.getElementById("copy-summary");
     const emailLink = document.getElementById("email-summary");
 
+    // Audio flags & objects
+    let voiceModeOn = false;
+    let lastAgentMessage = "";
+    let recognition = null;
+    let recognizing = false;
+
+    // Initialize Web Speech Recognition (if available)
+    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SR();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.addEventListener("result", (event) => {
+        const transcript = event.results[0][0].transcript;
+        chatInputEl.value = transcript;
+      });
+
+      recognition.addEventListener("end", () => {
+        recognizing = false;
+      });
+    }
+
+    function speakText(text) {
+      if (!("speechSynthesis" in window)) return;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1.0;
+      utter.pitch = 1.0;
+      utter.volume = 1.0;
+      window.speechSynthesis.cancel(); // stop anything currently speaking
+      window.speechSynthesis.speak(utter);
+    }
+
     function addMessage(role, text) {
       const row = document.createElement("div");
       row.className = "msg-row " + role;
@@ -481,18 +529,19 @@
       bubble.className = "msg-bubble";
       bubble.textContent = text;
 
-      if (role === "agent") {
-        const wrapper = document.createElement("div");
-        wrapper.appendChild(bubble);
-        row.appendChild(wrapper);
-      } else {
-        const wrapper = document.createElement("div");
-        wrapper.appendChild(bubble);
-        row.appendChild(wrapper);
-      }
+      const wrapper = document.createElement("div");
+      wrapper.appendChild(bubble);
+      row.appendChild(wrapper);
 
       chatMessagesEl.appendChild(row);
       chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+
+      if (role === "agent") {
+        lastAgentMessage = text;
+        if (voiceModeOn) {
+          speakText(text);
+        }
+      }
     }
 
     function askNextQuestion() {
@@ -505,7 +554,7 @@
 
     function buildSummary() {
       summarySectionEl.style.display = "block";
-      let text = "CIVIL RIGHTS COMPLAINT – INTAKE SUMMARY\\n\\n";
+      let text = "CIVIL RIGHTS COMPLAINT – INTAKE SUMMARY\n\n";
 
       const labels = [
         "Complainant Name",
@@ -524,12 +573,11 @@
       ];
 
       answers.forEach((ans, idx) => {
-        text += labels[idx] + ":\\n" + ans + "\\n\\n";
+        text += labels[idx] + ":\n" + ans + "\n\n";
       });
 
       summaryEl.textContent = text;
 
-      // Put a shortened version into the mailto link body (encoded)
       const mailBody = encodeURIComponent(text.slice(0, 4000));
       emailLink.href =
         "mailto:info@redherringciviljustice.com" +
@@ -540,7 +588,8 @@
 
       addMessage(
         "agent",
-        "Thank you. Your intake summary is now ready below. You can copy it, save it, or email it when you are able. A human advocate may review it when our full systems are live."
+        "Thank you. Your intake summary is now ready below. You can copy it, save it, or email it when you are able. " +
+        "A human advocate may review it when our full systems are live."
       );
     }
 
@@ -548,7 +597,6 @@
       const value = chatInputEl.value.trim();
       if (!value) return;
 
-      // Add user answer
       addMessage("user", value);
       answers.push(value);
       chatInputEl.value = "";
@@ -573,33 +621,44 @@
       const text = summaryEl.textContent;
       if (!text) return;
       navigator.clipboard.writeText(text).then(
-        () => {
-          alert("Complaint text copied to clipboard.");
-        },
-        () => {
-          alert("Unable to copy. You can manually select and copy the text.");
-        }
+        () => alert("Complaint text copied to clipboard."),
+        () => alert("Unable to copy. You can manually select and copy the text.")
       );
     });
 
-    // Initialize first message
-    addMessage(
-      "agent",
-      "Welcome. I am Helyah, the civil rights intake assistant for Red Herring Initiative Corp. " +
-        "I will ask you a series of questions to help document your complaint under 18 U.S.C. § 242. " +
-        "Please answer truthfully and in as much detail as you can. Let's begin."
-    );
-    askNextQuestion();
-
-    // Helper bubble logic
-    const helperPanel = document.getElementById("helper-panel");
-    const helperToggle = document.getElementById("helper-toggle");
-    let helperOpen = false;
-
-    helperToggle.addEventListener("click", () => {
-      helperOpen = !helperOpen;
-      helperPanel.style.display = helperOpen ? "block" : "none";
+    // Read last Helyah message
+    const ttsLastBtn = document.getElementById("tts-last");
+    ttsLastBtn.addEventListener("click", () => {
+      if (!lastAgentMessage) {
+        alert("No Helyah message to read yet.");
+        return;
+      }
+      speakText(lastAgentMessage);
     });
-  </script>
-</body>
-</html>
+
+    // Mic input button
+    const micBtn = document.getElementById("mic-btn");
+    micBtn.addEventListener("click", () => {
+      if (!recognition) {
+        alert("Speech recognition is not supported in this browser. Try Chrome or Edge.");
+        return;
+      }
+      if (recognizing) {
+        recognition.stop();
+        recognizing = false;
+        micBtn.textContent = "🎙 Speak";
+      } else {
+        recognizing = true;
+        micBtn.textContent = "⏹ Stop";
+        recognition.start();
+      }
+    });
+
+    // Voice mode toggle (auto TTS for assistant)
+    const voiceModeBtn = document.getElementById("voice-mode-btn");
+    voiceModeBtn.addEventListener("click", () => {
+      voiceModeOn = !voiceModeOn;
+      voiceModeBtn.textContent = voiceModeOn ? "🎧 Voice Mode: On" : "🎧 Voice Mode: Off";
+      if (voiceModeOn && lastAgentMessage) {
+        speakText(lastAgentMessage);
+      } else if

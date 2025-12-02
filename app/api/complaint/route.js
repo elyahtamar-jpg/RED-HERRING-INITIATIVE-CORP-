@@ -1,18 +1,30 @@
-export async function POST(request) {
+export async function POST(req) {
   try {
-    const data = await request.json();
+    const body = await req.json();
 
-    console.log("Received complaint:", data);
+    const { name, evidence } = body;
 
-    return Response.json(
-      { message: "Complaint received successfully", data },
+    console.log("Received complaint:", body);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Complaint received",
+        data: {
+          name,
+          evidence,
+        },
+      }),
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error processing complaint:", error);
 
-    return Response.json(
-      { error: "Failed to process complaint" },
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: "Failed to process complaint",
+      }),
       { status: 500 }
     );
   }

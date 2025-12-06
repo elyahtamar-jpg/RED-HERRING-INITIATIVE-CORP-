@@ -8,49 +8,58 @@ const client = new OpenAI({
 
 export async function POST(req) {
   try {
-    const { messages, currentQuestion } = await req.json();
+    const body = await req.json();
+    const { messages, currentQuestion } = body;
 
-    // Build conversation into OpenAI format
-    const formattedMessages = messages.map(m => ({
-      role: m.sender === "user" ? "user" : "assistant",
-      content: m.text,
-    }));
+    const history = messages
+      .map(m => `${m.sender === "user" ? "User" : "Helyah"}: ${m.text}`)
+      .join("\n");
 
-    // Add system instructions for Helyah
-    formattedMessages.unshift({
-      role: "system",
-      content: `
-You are HELYAH, the official intake assistant for the Red Herring Initiative.
-You:
-- Answer user questions clearly.
-- Provide helpful explanations.
-- DO NOT skip the user's question.
-- After answering, stay focused on civil rights, misconduct, and complaint intake.
-- Keep responses short unless the user asks for detail.
-`
-    });
+    const prompt = `
+You are HELYAH, the official AI Intake Agent for the Red Herring Initiative Civil Justice Advocacy Corporation.
 
-    // Current question context
-    if (currentQuestion) {
-      formattedMessages.push({
-        role: "assistant",
-        content: `The next scripted question is: "${currentQuestion}".`,
-      });
-    }
+Your job:
+- Answer questions clearly.
+- Provide guidance when the user is confused.
+- Help them understand legal terms (without giving legal advice).
+- ALWAYS stay respectful and calm.
+- If the user asks something unrelated, redirect gently.
+- If the user is answering an intake question, acknowledge it.
 
-    // Call OpenAI
+Conversation so far:
+${history}
+
+Current scripted intake question:
+"${currentQuestion}"
+
+Respond as HELYAH in a short, clear message.
+`;
+
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: formattedMessages,
+      messages: [
+        { role: "system", content: "You are HELYAH, a helpful intake assistant." },
+        { role: "user", content: prompt }
+      ],
       max_tokens: 150,
-      temperature: 0.4
+      temperature: 0.4,
     });
 
-    const reply = completion.choices[0].message.content.trim();
+    const reply =
+      completion?.choices?.[0]?.message?.content ||
+      "I'm here to help. Please continue.";
 
-    return Response.json({ reply });
+    return new Response(JSON.stringify({ reply }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+
   } catch (error) {
     console.error("AI ROUTE ERROR:", error);
-    return Response.json({ reply: "Helyah encountered an error while responding." });
+
+    return new Response(
+      JSON.stringify({ reply: "I'm sorry, something went wrong with the AI system." }),
+      { status: 500 }
+    );
   }
 }

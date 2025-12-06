@@ -24,17 +24,17 @@ export default function Chatbot() {
     "Would you like a live director to call you immediately?"
   ];
 
-  // Start conversation
-  useEffect(() => {
-    addBot(questions[0]);
-  }, []);
-
-  // Auto scroll
+  // Scroll to bottom of chat
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Start with first question
+  useEffect(() => {
+    addBot(questions[0]);
+  }, []);
 
   function addBot(text) {
     setMessages(prev => [...prev, { sender: "bot", text }]);
@@ -54,14 +54,14 @@ export default function Chatbot() {
 
     const conversation = [...messages, { sender: "user", text: userText }];
 
+    // Detect if user asked a real question
     const askingQuestion =
       userText.endsWith("?") ||
-      ["what", "why", "how", "when", "where"].some(prefix =>
-        userText.toLowerCase().startsWith(prefix)
+      ["what", "why", "how", "when", "where"].some(word =>
+        userText.toLowerCase().startsWith(word)
       );
 
     setIsThinking(true);
-
     let aiReply = null;
 
     try {
@@ -79,15 +79,19 @@ export default function Chatbot() {
         aiReply = data.reply || null;
       }
     } catch (err) {
-      aiReply = "I'm sorry, something went wrong processing your message.";
+      console.error("AI error", err);
+      aiReply = "I’m sorry, something went wrong processing your message.";
     }
 
     setIsThinking(false);
 
+    // Add AI response if valid
     if (aiReply) addBot(aiReply);
 
+    // If user asked a question → stop here
     if (askingQuestion) return;
 
+    // Continue scripted flow
     const nextIndex = questionIndex + 1;
     setQuestionIndex(nextIndex);
 

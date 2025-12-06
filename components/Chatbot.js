@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { speakText, startRecognition } from "@/utils/speech";
+import { speakText, startRecognition } from "../utils/speech";
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([]);
@@ -20,10 +20,10 @@ export default function Chatbot() {
     "Do you have evidence such as photos, witnesses, or documents?",
     "What is your phone number so a director can contact you?",
     "What is your email address?",
-    "Would you like a live director to call you immediately?",
+    "Would you like a live director to call you immediately?"
   ];
 
-  // Scroll chat window
+  // Scroll chat automatically
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -44,14 +44,13 @@ export default function Chatbot() {
     setMessages((prev) => [...prev, { sender: "user", text }]);
   }
 
-  async function handleSend() {
+  function handleSend() {
     if (!input.trim()) return;
 
     addUser(input);
 
     const nextIndex = questionIndex + 1;
     setQuestionIndex(nextIndex);
-
     setInput("");
 
     if (nextIndex < questions.length) {
@@ -79,7 +78,7 @@ export default function Chatbot() {
           borderRadius: "10px",
           height: "400px",
           overflowY: "scroll",
-          marginBottom: "10px",
+          marginBottom: "10px"
         }}
       >
         {messages.map((m, i) => (
@@ -98,7 +97,7 @@ export default function Chatbot() {
             flex: 1,
             padding: "12px",
             borderRadius: "8px",
-            border: "1px solid #aaa",
+            border: "1px solid #aaa"
           }}
         />
 

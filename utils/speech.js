@@ -1,6 +1,4 @@
-// -------------------------------
-//  TEXT-TO-SPEECH
-// -------------------------------
+// Text-to-Speech
 export function speakText(text) {
   if (typeof window === "undefined") return;
   if (!window.speechSynthesis) return;
@@ -8,12 +6,12 @@ export function speakText(text) {
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = 1;
   utter.pitch = 1;
+  utter.volume = 1;
+  window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utter);
 }
 
-// -------------------------------
-//  SINGLE-SHOT SPEECH RECOGNITION
-// -------------------------------
+// Speech-to-Text (keeps mic open longer)
 export function startRecognition(callback) {
   if (typeof window === "undefined") return;
 
@@ -27,6 +25,7 @@ export function startRecognition(callback) {
 
   const recognition = new SpeechRecognition();
   recognition.lang = "en-US";
+  recognition.continuous = false;       
   recognition.interimResults = false;
 
   recognition.onresult = (event) => {
@@ -34,51 +33,9 @@ export function startRecognition(callback) {
     callback(text);
   };
 
-  recognition.start();
-}
-
-// -------------------------------
-//  CONTINUOUS SPEECH RECOGNITION
-//  (This keeps listening until you press Stop)
-// -------------------------------
-export function startContinuousRecognition(onText, onStateChange) {
-  if (typeof window === "undefined") return null;
-
-  const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
-
-  if (!SpeechRecognition) {
-    onText("Speech recognition not supported.");
-    return null;
-  }
-
-  const recognition = new SpeechRecognition();
-  recognition.lang = "en-US";
-  recognition.interimResults = false;
-  recognition.continuous = true;
-
-  recognition.onresult = (event) => {
-    const text = event.results[event.results.length - 1][0].transcript;
-    onText(text);
-  };
-
-  recognition.onstart = () => {
-    if (onStateChange) onStateChange(true);
-  };
-
-  recognition.onend = () => {
-    if (onStateChange) onStateChange(false);
+  recognition.onerror = () => {
+    callback("");
   };
 
   recognition.start();
-
-  return recognition;
-}
-
-// -------------------------------
-//  STOP CONTINUOUS RECOGNITION
-// -------------------------------
-export function stopContinuousRecognition(recognitionInstance) {
-  if (!recognitionInstance) return;
-  recognitionInstance.stop();
 }

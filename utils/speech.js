@@ -1,31 +1,34 @@
-// Text-to-Speech (Helyah speaking)
+// Text-to-Speech
 export function speakText(text) {
+  if (typeof window === "undefined") return;
+  if (!window.speechSynthesis) return;
+
   const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = 1;   // voice speed
-  utter.pitch = 1;  // voice tone
-  speechSynthesis.speak(utter);
+  utter.rate = 1;
+  utter.pitch = 1;
+  window.speechSynthesis.speak(utter);
 }
 
-// Speech-to-Text (user microphone input)
+// Speech-to-Text
 export function startRecognition(callback) {
-  const SpeechRecognition =
+  if (typeof window === "undefined") return;
+
+  const SpeechRecognition = 
     window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  const recog = new SpeechRecognition();
+  if (!SpeechRecognition) {
+    callback("Speech recognition not supported on this device.");
+    return;
+  }
 
-  recog.lang = "en-US";
-  recog.continuous = true;       // 🔥 keeps mic open long-term
-  recog.interimResults = false;
+  const recognition = new SpeechRecognition();
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
 
-  recog.start();
-
-  recog.onresult = (event) => {
-    const transcript =
-      event.results[event.results.length - 1][0].transcript;
-    callback(transcript);
+  recognition.onresult = (event) => {
+    const text = event.results[0][0].transcript;
+    callback(text);
   };
 
-  recog.onerror = () => {
-    console.warn("Microphone error occurred");
-  };
+  recognition.start();
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { speakText, startRecognition } from "../utils/speech";
+import { speakText, startRecognition } from "@/utils/speech";
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([]);
@@ -24,26 +24,28 @@ export default function Chatbot() {
     "Would you like a live director to call you immediately?"
   ];
 
-  // Start with first question
+  // Start with the first question
   useEffect(() => {
     addBot(questions[0]);
   }, []);
 
-  // Auto-scroll chat box
+  // Always scroll to newest message
   useEffect(() => {
-    if (!chatRef.current) return;
-    chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
   }, [messages]);
 
   function addBot(text) {
-    setMessages(prev => [...prev, { sender: "bot", text }]);
+    setMessages((prev) => [...prev, { sender: "bot", text }]);
     speakText(text);
   }
 
   function addUser(text) {
-    setMessages(prev => [...prev, { sender: "user", text }]);
+    setMessages((prev) => [...prev, { sender: "user", text }]);
   }
 
+  // 🔥 FIXED: Helyah ALWAYS answers the user's question before moving on
   async function handleSend() {
     if (!input.trim() || isThinking) return;
 
@@ -51,21 +53,11 @@ export default function Chatbot() {
     setInput("");
     addUser(userText);
 
-    const isQuestion =
-      userText.endsWith("?") ||
-      userText.toLowerCase().startsWith("what") ||
-      userText.toLowerCase().startsWith("why") ||
-      userText.toLowerCase().startsWith("how") ||
-      userText.toLowerCase().startsWith("when") ||
-      userText.toLowerCase().startsWith("where");
-
-    // Build history for API
     const conversation = [
       ...messages,
       { sender: "user", text: userText }
     ];
 
-    // Ask AI
     setIsThinking(true);
     let aiReply = null;
 
@@ -75,42 +67,60 @@ export default function Chatbot() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: conversation,
-          currentQuestion: questions[questionIndex] || ""
+          currentQuestion: questions[questionIndex]
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
         aiReply = data.reply;
+      } else {
+        aiReply = "I had trouble processing that. Please continue.";
       }
     } catch (err) {
-      aiReply = "I'm sorry, something went wrong while processing that.";
+      aiReply = "Something went wrong on my end.";
     }
 
     setIsThinking(false);
 
-    // Give AI reply
+    // ❗ ALWAYS answer the user first
     if (aiReply) addBot(aiReply);
 
-    // If user asked a question — STOP SCRIPT, wait for next user message
-    if (isQuestion) return;
+    // ❗ Stop here if user asked a question — DO NOT advance script
+    const askedQuestion =
+      userText.includes("?") ||
+      userText.toLowerCase().startsWith("what ") ||
+      userText.toLowerCase().startsWith("why ") ||
+      userText.toLowerCase().startsWith("how ") ||
+      userText.toLowerCase().startsWith("when ") ||
+      userText.toLowerCase().startsWith("where ");
 
-    // Continue to next scripted question
+    if (askedQuestion) return;
+
+    // Continue to next script question
     const nextIndex = questionIndex + 1;
     setQuestionIndex(nextIndex);
 
     if (nextIndex < questions.length) {
-      setTimeout(() => addBot(questions[nextIndex]), 700);
+      setTimeout(() => addBot(questions[nextIndex]), 800);
     } else {
       setTimeout(() => {
-        addBot("Thank you. Your complaint has been submitted. A director may contact you shortly.");
-      }, 700);
+        addBot("Thank you. Your complaint has been submitted.");
+      }, 800);
     }
   }
 
+  // 🎤 FIXED: Microphone now continues listening without pressing again
   function handleMic() {
     if (isThinking) return;
-    startRecognition(text => setInput(text));
+
+    startRecognition((text) => {
+      setInput(text);
+      setTimeout(() => handleSend(), 200);
+
+      // 🔥 Auto-restart mic for continuous listening
+      setTimeout(() => handleMic(), 300);
+    });
   }
 
   return (
@@ -133,7 +143,7 @@ export default function Chatbot() {
             key={i}
             style={{
               textAlign: m.sender === "user" ? "right" : "left",
-              marginBottom: 6,
+              marginBottom: 4,
             }}
           >
             <b>{m.sender === "user" ? "You:" : "Helyah:"}</b> {m.text}
@@ -141,7 +151,7 @@ export default function Chatbot() {
         ))}
 
         {isThinking && (
-          <div style={{ fontStyle: "italic", opacity: 0.7 }}>
+          <div style={{ fontStyle: "italic", marginTop: 4 }}>
             Helyah is thinking…
           </div>
         )}
@@ -158,13 +168,14 @@ export default function Chatbot() {
             borderRadius: "8px",
             border: "1px solid #aaa",
           }}
+          disabled={isThinking}
         />
 
-        <button onClick={handleSend} style={{ padding: "12px" }}>
+        <button onClick={handleSend} style={{ padding: "12px" }} disabled={isThinking}>
           Send
         </button>
 
-        <button onClick={handleMic} style={{ padding: "12px" }}>
+        <button onClick={handleMic} style={{ padding: "12px" }} disabled={isThinking}>
           🎤
         </button>
       </div>

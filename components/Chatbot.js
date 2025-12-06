@@ -24,12 +24,10 @@ export default function Chatbot() {
     "Would you like a live director to call you immediately?"
   ];
 
-  // Start conversation
   useEffect(() => {
     addBot(questions[0]);
   }, []);
 
-  // Auto-scroll
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -37,26 +35,12 @@ export default function Chatbot() {
   }, [messages]);
 
   function addBot(text) {
-    setMessages(prev => [...prev, { sender: "bot", text }]);
+    setMessages((prev) => [...prev, { sender: "bot", text }]);
     speakText(text);
   }
 
   function addUser(text) {
-    setMessages(prev => [...prev, { sender: "user", text }]);
-  }
-
-  // Detect if user asked a question (so Helyah must answer it)
-  function userAskedQuestion(text) {
-    const t = text.toLowerCase();
-    return (
-      t.endsWith("?") ||
-      t.startsWith("what") ||
-      t.startsWith("why") ||
-      t.startsWith("how") ||
-      t.startsWith("when") ||
-      t.startsWith("where") ||
-      t.includes("explain")
-    );
+    setMessages((prev) => [...prev, { sender: "user", text }]);
   }
 
   async function handleSend() {
@@ -66,42 +50,45 @@ export default function Chatbot() {
     setInput("");
     addUser(userText);
 
-    const userAsked = userAskedQuestion(userText);
+    const askingQuestion =
+      userText.endsWith("?") ||
+      userText.toLowerCase().startsWith("what") ||
+      userText.toLowerCase().startsWith("why") ||
+      userText.toLowerCase().startsWith("how") ||
+      userText.toLowerCase().startsWith("when") ||
+      userText.toLowerCase().startsWith("where");
 
-    // Send to AI route
     setIsThinking(true);
 
-    let reply = null;
+    let aiReply = null;
+
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages,
-          userText,
-          currentQuestion: questions[questionIndex] || "",
-          isQuestion: userAsked
-        })
+          messages: [...messages, { sender: "user", text: userText }],
+          currentQuestion: questions[questionIndex]
+        }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        reply = data.reply;
+        aiReply = data.reply;
       }
-    } catch (e) {
-      reply = "I'm sorry, I had trouble responding. Please continue.";
+    } catch (err) {
+      console.error(err);
+      aiReply = "Something went wrong while processing your question.";
     }
 
     setIsThinking(false);
 
-    if (reply) {
-      addBot(reply);
+    if (aiReply) {
+      addBot(aiReply);
     }
 
-    // Stop here if user asked a question
-    if (userAsked) return;
+    if (askingQuestion) return;
 
-    // Move to next intake question
     const nextIndex = questionIndex + 1;
     setQuestionIndex(nextIndex);
 
@@ -109,29 +96,29 @@ export default function Chatbot() {
       setTimeout(() => addBot(questions[nextIndex]), 900);
     } else {
       setTimeout(() => {
-        addBot("Thank you. Your complaint has been submitted. A director may contact you soon.");
+        addBot("Thank you. Your complaint has been submitted.");
       }, 900);
     }
   }
 
   function handleMic() {
     if (isThinking) return;
-    startRecognition(text => setInput(text));
+    startRecognition((text) => setInput(text));
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: "0 auto" }}>
+    <div style={{ maxWidth: "600px", margin: "0 auto" }}>
       <h2>Red Herring Initiative – Complaint Intake</h2>
 
       <div
         ref={chatRef}
         style={{
           border: "1px solid #ccc",
-          padding: 12,
-          height: 400,
+          padding: "12px",
+          borderRadius: "10px",
+          height: "400px",
           overflowY: "scroll",
-          borderRadius: 10,
-          marginBottom: 10
+          marginBottom: "10px",
         }}
       >
         {messages.map((m, i) => (
@@ -139,7 +126,7 @@ export default function Chatbot() {
             key={i}
             style={{
               textAlign: m.sender === "user" ? "right" : "left",
-              marginBottom: 6
+              marginBottom: 4,
             }}
           >
             <b>{m.sender === "user" ? "You:" : "Helyah:"}</b> {m.text}
@@ -147,30 +134,30 @@ export default function Chatbot() {
         ))}
 
         {isThinking && (
-          <div style={{ fontStyle: "italic", marginTop: 6 }}>
+          <div style={{ fontStyle: "italic", marginTop: 4 }}>
             Helyah is thinking…
           </div>
         )}
       </div>
 
-      <div style={{ display: "flex", gap: 10 }}>
+      <div style={{ display: "flex", gap: "10px" }}>
         <input
           value={input}
-          onChange={e => setInput(e.target.value)}
-          placeholder="Type your answer..."
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type your answer…"
           style={{
             flex: 1,
-            padding: 12,
-            borderRadius: 8,
-            border: "1px solid #aaa"
+            padding: "12px",
+            borderRadius: "8px",
+            border: "1px solid #aaa",
           }}
         />
 
-        <button onClick={handleSend} style={{ padding: 12 }}>
+        <button onClick={handleSend} style={{ padding: "12px" }}>
           Send
         </button>
 
-        <button onClick={handleMic} style={{ padding: 12 }}>
+        <button onClick={handleMic} style={{ padding: "12px" }}>
           🎤
         </button>
       </div>

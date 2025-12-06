@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { speakText, startRecognition } from "../utils/speech";
+import { speakText, startRecognition } from "@/utils/speech";
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([]);
@@ -24,50 +24,56 @@ export default function Chatbot() {
     "Would you like a live director to call you immediately?"
   ];
 
-  // Start with first question
-  useEffect(() => {
-    addBot(questions[0]);
-  }, []);
-
-  // Auto-scroll
+  // Scroll chat window
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [messages]);
 
+  // Start chatbot with first question
+  useEffect(() => {
+    addBot(questions[0]);
+  }, []);
+
   function addBot(text) {
-    setMessages((prev) => [...prev, { sender: "bot", text }]);
+    setMessages(prev => [...prev, { sender: "bot", text }]);
     speakText(text);
   }
 
   function addUser(text) {
-    setMessages((prev) => [...prev, { sender: "user", text }]);
+    setMessages(prev => [...prev, { sender: "user", text }]);
   }
 
   async function handleSend() {
     if (!input.trim() || isThinking) return;
 
     const userText = input.trim();
-    setInput("");
     addUser(userText);
+    setInput("");
 
-    const askingQuestion =
+    const conversation = [
+      ...messages,
+      { sender: "user", text: userText }
+    ];
+
+    const isQuestion =
       userText.endsWith("?") ||
-      ["what", "why", "how", "when", "where"].some((q) =>
+      ["what", "why", "how", "when", "where"].some(q =>
         userText.toLowerCase().startsWith(q)
       );
 
     setIsThinking(true);
 
-    // Call backend AI
     let aiReply = null;
-
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userMessage: userText }),
+        body: JSON.stringify({
+          messages: conversation,
+          currentQuestion: questions[questionIndex]
+        }),
       });
 
       if (res.ok) {
@@ -75,29 +81,34 @@ export default function Chatbot() {
         aiReply = data.reply;
       }
     } catch (err) {
-      aiReply = "I'm sorry, I couldn't process that.";
+      aiReply = "I'm sorry, something went wrong processing your message.";
     }
 
     setIsThinking(false);
 
     if (aiReply) addBot(aiReply);
 
-    if (askingQuestion) return;
+    // If user asked a question, do NOT advance script
+    if (isQuestion) return;
 
-    // Continue scripted intake
-    const next = questionIndex + 1;
-    setQuestionIndex(next);
+    // Move to next scripted question
+    const nextIndex = questionIndex + 1;
+    setQuestionIndex(nextIndex);
 
-    if (next < questions.length) {
-      setTimeout(() => addBot(questions[next]), 900);
+    if (nextIndex < questions.length) {
+      setTimeout(() => addBot(questions[nextIndex]), 900);
     } else {
-      addBot("Thank you. Your complaint has been submitted.");
+      setTimeout(() => {
+        addBot(
+          "Thank you. Your complaint has been submitted. A director may contact you after review."
+        );
+      }, 900);
     }
   }
 
   function handleMic() {
     if (isThinking) return;
-    startRecognition((text) => setInput(text));
+    startRecognition(text => setInput(text));
   }
 
   return (
@@ -112,17 +123,23 @@ export default function Chatbot() {
           borderRadius: "10px",
           height: "400px",
           overflowY: "scroll",
-          marginBottom: "10px",
+          marginBottom: "10px"
         }}
       >
         {messages.map((m, i) => (
-          <div key={i} style={{ textAlign: m.sender === "user" ? "right" : "left" }}>
+          <div
+            key={i}
+            style={{
+              textAlign: m.sender === "user" ? "right" : "left",
+              marginBottom: 4
+            }}
+          >
             <b>{m.sender === "user" ? "You:" : "Helyah:"}</b> {m.text}
           </div>
         ))}
 
         {isThinking && (
-          <div style={{ fontStyle: "italic", marginTop: 4 }}>
+          <div style={{ marginTop: 6, fontStyle: "italic" }}>
             Helyah is thinking…
           </div>
         )}
@@ -131,13 +148,13 @@ export default function Chatbot() {
       <div style={{ display: "flex", gap: "10px" }}>
         <input
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={e => setInput(e.target.value)}
           placeholder="Type your answer…"
           style={{
             flex: 1,
             padding: "12px",
             borderRadius: "8px",
-            border: "1px solid #aaa",
+            border: "1px solid #aaa"
           }}
           disabled={isThinking}
         />

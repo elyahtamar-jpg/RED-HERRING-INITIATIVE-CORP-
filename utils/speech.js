@@ -1,4 +1,6 @@
-// Text-to-Speech
+// -------------------------------
+//  TEXT-TO-SPEECH
+// -------------------------------
 export function speakText(text) {
   if (typeof window === "undefined") return;
   if (!window.speechSynthesis) return;
@@ -6,11 +8,12 @@ export function speakText(text) {
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = 1;
   utter.pitch = 1;
-  window.speechSynthesis.cancel(); // avoid overlap
   window.speechSynthesis.speak(utter);
 }
 
-// 🔹 Single-shot Speech-to-Text (what you already had)
+// -------------------------------
+//  SINGLE-SHOT SPEECH RECOGNITION
+// -------------------------------
 export function startRecognition(callback) {
   if (typeof window === "undefined") return;
 
@@ -34,62 +37,48 @@ export function startRecognition(callback) {
   recognition.start();
 }
 
-// 🔹 NEW: Continuous Speech-to-Text (for hands-free mode)
-export function startContinuousRecognition(onFinalText, onListeningStatus) {
+// -------------------------------
+//  CONTINUOUS SPEECH RECOGNITION
+//  (This keeps listening until you press Stop)
+// -------------------------------
+export function startContinuousRecognition(onText, onStateChange) {
   if (typeof window === "undefined") return null;
 
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
 
   if (!SpeechRecognition) {
-    onFinalText("Speech recognition not supported on this device.");
+    onText("Speech recognition not supported.");
     return null;
   }
 
   const recognition = new SpeechRecognition();
   recognition.lang = "en-US";
-  recognition.interimResults = true;
+  recognition.interimResults = false;
   recognition.continuous = true;
 
-  let finalText = "";
-
-  recognition.onstart = () => {
-    if (onListeningStatus) onListeningStatus(true);
+  recognition.onresult = (event) => {
+    const text = event.results[event.results.length - 1][0].transcript;
+    onText(text);
   };
 
-  recognition.onresult = (event) => {
-    let interim = "";
-    for (let i = 0; i < event.results.length; i++) {
-      const res = event.results[i];
-      if (res.isFinal) {
-        finalText += res[0].transcript + " ";
-      } else {
-        interim += res[0].transcript;
-      }
-    }
-
-    if (finalText.trim().length > 0) {
-      onFinalText(finalText.trim());
-      finalText = "";
-    }
+  recognition.onstart = () => {
+    if (onStateChange) onStateChange(true);
   };
 
   recognition.onend = () => {
-    // we let the UI decide whether to restart or not
-    if (onListeningStatus) onListeningStatus(false);
-  };
-
-  recognition.onerror = () => {
-    if (onListeningStatus) onListeningStatus(false);
+    if (onStateChange) onStateChange(false);
   };
 
   recognition.start();
+
   return recognition;
 }
 
+// -------------------------------
+//  STOP CONTINUOUS RECOGNITION
+// -------------------------------
 export function stopContinuousRecognition(recognitionInstance) {
-  if (recognitionInstance) {
-    recognitionInstance.onend = null;
-    recognitionInstance.stop();
-  }
+  if (!recognitionInstance) return;
+  recognitionInstance.stop();
 }

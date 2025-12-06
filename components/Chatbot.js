@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { speakText, startRecognition } from "@/utils/speech";
+import { speakText, startRecognition } from "../utils/speech";
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([]);
@@ -11,6 +11,7 @@ export default function Chatbot() {
 
   const chatRef = useRef(null);
 
+  // Scripted complaint questions
   const questions = [
     "Hello, I am Helyah, your Red Herring Intake Assistant. What is your full name?",
     "Please describe the incident you are reporting.",
@@ -24,23 +25,25 @@ export default function Chatbot() {
     "Would you like a live director to call you immediately?"
   ];
 
-  // Scroll chat window
+  // Auto-scroll
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Start chatbot with first question
+  // Start conversation with first question
   useEffect(() => {
     addBot(questions[0]);
   }, []);
 
+  // Add bot message
   function addBot(text) {
     setMessages(prev => [...prev, { sender: "bot", text }]);
     speakText(text);
   }
 
+  // Add user message
   function addUser(text) {
     setMessages(prev => [...prev, { sender: "user", text }]);
   }
@@ -49,60 +52,62 @@ export default function Chatbot() {
     if (!input.trim() || isThinking) return;
 
     const userText = input.trim();
-    addUser(userText);
     setInput("");
+    addUser(userText);
 
-    const conversation = [
-      ...messages,
-      { sender: "user", text: userText }
-    ];
-
-    const isQuestion =
+    // Determine if user is asking a question
+    const askingQuestion =
       userText.endsWith("?") ||
-      ["what", "why", "how", "when", "where"].some(q =>
-        userText.toLowerCase().startsWith(q)
-      );
+      userText.toLowerCase().startsWith("what") ||
+      userText.toLowerCase().startsWith("why") ||
+      userText.toLowerCase().startsWith("how") ||
+      userText.toLowerCase().startsWith("when") ||
+      userText.toLowerCase().startsWith("where");
+
+    // Build conversation for AI
+    const conversation = [...messages, { sender: "user", text: userText }];
 
     setIsThinking(true);
-
     let aiReply = null;
+
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: conversation,
-          currentQuestion: questions[questionIndex]
-        }),
+          currentQuestion: questions[questionIndex] || ""
+        })
       });
 
       if (res.ok) {
         const data = await res.json();
-        aiReply = data.reply;
+        aiReply = data.reply || null;
       }
     } catch (err) {
-      aiReply = "I'm sorry, something went wrong processing your message.";
+      aiReply = "I'm sorry, something went wrong processing your question.";
     }
 
     setIsThinking(false);
 
-    if (aiReply) addBot(aiReply);
+    // If AI responded, show it
+    if (aiReply) {
+      addBot(aiReply);
+    }
 
-    // If user asked a question, do NOT advance script
-    if (isQuestion) return;
+    // If user asked a question, DON'T advance questionnaire
+    if (askingQuestion) return;
 
-    // Move to next scripted question
+    // Advance to next scripted question
     const nextIndex = questionIndex + 1;
     setQuestionIndex(nextIndex);
 
     if (nextIndex < questions.length) {
-      setTimeout(() => addBot(questions[nextIndex]), 900);
+      setTimeout(() => addBot(questions[nextIndex]), 800);
     } else {
       setTimeout(() => {
-        addBot(
-          "Thank you. Your complaint has been submitted. A director may contact you after review."
-        );
-      }, 900);
+        addBot("Thank you. Your complaint has been submitted. A director may contact you after review.");
+      }, 800);
     }
   }
 
@@ -139,9 +144,7 @@ export default function Chatbot() {
         ))}
 
         {isThinking && (
-          <div style={{ marginTop: 6, fontStyle: "italic" }}>
-            Helyah is thinking…
-          </div>
+          <div style={{ fontStyle: "italic" }}>Helyah is thinking…</div>
         )}
       </div>
 
@@ -159,11 +162,11 @@ export default function Chatbot() {
           disabled={isThinking}
         />
 
-        <button onClick={handleSend} disabled={isThinking} style={{ padding: "12px" }}>
+        <button onClick={handleSend} style={{ padding: "12px" }} disabled={isThinking}>
           Send
         </button>
 
-        <button onClick={handleMic} disabled={isThinking} style={{ padding: "12px" }}>
+        <button onClick={handleMic} style={{ padding: "12px" }} disabled={isThinking}>
           🎤
         </button>
       </div>

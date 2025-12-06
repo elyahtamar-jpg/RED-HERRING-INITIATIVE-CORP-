@@ -6,6 +6,8 @@ export function speakText(text) {
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = 1;
   utter.pitch = 1;
+
+  window.speechSynthesis.cancel(); // prevent overlap
   window.speechSynthesis.speak(utter);
 }
 
@@ -13,7 +15,7 @@ export function speakText(text) {
 export function startRecognition(callback) {
   if (typeof window === "undefined") return;
 
-  const SpeechRecognition = 
+  const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
 
   if (!SpeechRecognition) {
@@ -26,8 +28,12 @@ export function startRecognition(callback) {
   recognition.interimResults = false;
 
   recognition.onresult = (event) => {
-    const text = event.results[0][0].transcript;
-    callback(text);
+    const transcript = event.results[0][0].transcript;
+    callback(transcript);
+  };
+
+  recognition.onerror = () => {
+    callback("Could not process audio input.");
   };
 
   recognition.start();

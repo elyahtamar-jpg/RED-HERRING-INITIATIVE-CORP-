@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { speakText, startRecognition, startContinuousRecognition, stopContinuousRecognition } from "@/utils/speech";
+import { speakText, startRecognition } from "../utils/speech";
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [isThinking, setIsThinking] = useState(false);
-  const [listening, setListening] = useState(false);
 
   const chatRef = useRef(null);
-  const continuousRef = useRef(null);
 
   const questions = [
     "Hello, I am Helyah, your Red Herring Intake Assistant. What is your full name?",
@@ -26,25 +24,24 @@ export default function Chatbot() {
     "Would you like a live director to call you immediately?"
   ];
 
-  // Scroll automatically
-  useEffect(() => {
-    if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
-    }
-  }, [messages]);
-
   // Start with first question
   useEffect(() => {
     addBot(questions[0]);
   }, []);
 
+  // Auto-scroll chat box
+  useEffect(() => {
+    if (!chatRef.current) return;
+    chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  }, [messages]);
+
   function addBot(text) {
-    setMessages((prev) => [...prev, { sender: "bot", text }]);
+    setMessages(prev => [...prev, { sender: "bot", text }]);
     speakText(text);
   }
 
   function addUser(text) {
-    setMessages((prev) => [...prev, { sender: "user", text }]);
+    setMessages(prev => [...prev, { sender: "user", text }]);
   }
 
   async function handleSend() {
@@ -54,24 +51,24 @@ export default function Chatbot() {
     setInput("");
     addUser(userText);
 
-    // Detect if user is asking a question
-    const asking =
+    const isQuestion =
       userText.endsWith("?") ||
       userText.toLowerCase().startsWith("what") ||
       userText.toLowerCase().startsWith("why") ||
       userText.toLowerCase().startsWith("how") ||
       userText.toLowerCase().startsWith("when") ||
-      userText.toLowerCase().startsWith("where") ||
-      userText.toLowerCase().includes("explain");
+      userText.toLowerCase().startsWith("where");
 
+    // Build history for API
     const conversation = [
       ...messages,
-      { sender: "user", text: userText },
+      { sender: "user", text: userText }
     ];
 
+    // Ask AI
     setIsThinking(true);
-
     let aiReply = null;
+
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
@@ -87,44 +84,33 @@ export default function Chatbot() {
         aiReply = data.reply;
       }
     } catch (err) {
-      aiReply = "I'm sorry, I couldn't process that. Please continue.";
+      aiReply = "I'm sorry, something went wrong while processing that.";
     }
 
     setIsThinking(false);
 
+    // Give AI reply
     if (aiReply) addBot(aiReply);
 
-    // If user asked a question → DO NOT advance
-    if (asking) return;
+    // If user asked a question — STOP SCRIPT, wait for next user message
+    if (isQuestion) return;
 
-    // Move forward with intake sequence
-    const next = questionIndex + 1;
-    setQuestionIndex(next);
+    // Continue to next scripted question
+    const nextIndex = questionIndex + 1;
+    setQuestionIndex(nextIndex);
 
-    if (next < questions.length) {
-      setTimeout(() => addBot(questions[next]), 900);
+    if (nextIndex < questions.length) {
+      setTimeout(() => addBot(questions[nextIndex]), 700);
     } else {
       setTimeout(() => {
-        addBot("Thank you. Your complaint has been submitted. A director may contact you after review.");
-      }, 900);
+        addBot("Thank you. Your complaint has been submitted. A director may contact you shortly.");
+      }, 700);
     }
   }
 
-  // 🟢 Continuous microphone logic
   function handleMic() {
     if (isThinking) return;
-
-    if (listening) {
-      stopContinuousRecognition(continuousRef.current);
-      continuousRef.current = null;
-      setListening(false);
-      return;
-    }
-
-    continuousRef.current = startContinuousRecognition(
-      (text) => setInput(text),
-      (status) => setListening(status)
-    );
+    startRecognition(text => setInput(text));
   }
 
   return (
@@ -147,7 +133,7 @@ export default function Chatbot() {
             key={i}
             style={{
               textAlign: m.sender === "user" ? "right" : "left",
-              marginBottom: 4,
+              marginBottom: 6,
             }}
           >
             <b>{m.sender === "user" ? "You:" : "Helyah:"}</b> {m.text}
@@ -155,7 +141,9 @@ export default function Chatbot() {
         ))}
 
         {isThinking && (
-          <div style={{ fontStyle: "italic" }}>Helyah is thinking…</div>
+          <div style={{ fontStyle: "italic", opacity: 0.7 }}>
+            Helyah is thinking…
+          </div>
         )}
       </div>
 
@@ -170,15 +158,14 @@ export default function Chatbot() {
             borderRadius: "8px",
             border: "1px solid #aaa",
           }}
-          disabled={isThinking}
         />
 
-        <button onClick={handleSend} style={{ padding: "12px" }} disabled={isThinking}>
+        <button onClick={handleSend} style={{ padding: "12px" }}>
           Send
         </button>
 
-        <button onClick={handleMic} style={{ padding: "12px" }} disabled={isThinking}>
-          {listening ? "🛑 Stop" : "🎤"}
+        <button onClick={handleMic} style={{ padding: "12px" }}>
+          🎤
         </button>
       </div>
     </div>

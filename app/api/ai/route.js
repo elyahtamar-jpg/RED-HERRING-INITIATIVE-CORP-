@@ -1,64 +1,57 @@
+import { NextResponse } from "next/server";
 import OpenAI from "openai";
-
-export const runtime = "edge";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function POST(req) {
-  try {
-    const body = await req.json();
-    const { messages, currentQuestion } = body;
-
-    const history = messages
-      .map(m => `${m.sender === "user" ? "User" : "Helyah"}: ${m.text}`)
-      .join("\n");
-
-    const prompt = `
-You are HELYAH, the official AI Intake Agent for the Red Herring Initiative Civil Justice Advocacy Corporation.
-
+// ⭐ Helyah's personality + intake purpose
+const SYSTEM_PROMPT = `
+You are Helyah, the intelligent intake assistant for the Red Herring Initiative.
 Your job:
-- Answer questions clearly.
-- Provide guidance when the user is confused.
-- Help them understand legal terms (without giving legal advice).
-- ALWAYS stay respectful and calm.
-- If the user asks something unrelated, redirect gently.
-- If the user is answering an intake question, acknowledge it.
-
-Conversation so far:
-${history}
-
-Current scripted intake question:
-"${currentQuestion}"
-
-Respond as HELYAH in a short, clear message.
+- Answer ANY question the user asks (legal explanation, definitions, guidance).
+- Keep answers simple, accurate, supportive, and professional.
+- ONLY after answering, allow the script to continue to the next intake question.
+- Do NOT give legal advice. Provide general information only.
+- Never ignore questions. Always respond meaningfully.
+- If user asks about 18 USC 242, give a clear plain-language explanation.
 `;
 
+export async function POST(req) {
+  try {
+    const { messages, currentQuestion } = await req.json();
+
+    // Convert history to OpenAI format
+    const formattedMessages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...messages.map((m) => ({
+        role: m.sender === "user" ? "user" : "assistant",
+        content: m.text,
+      })),
+      {
+        role: "system",
+        content: `The scripted intake question the assistant will ask next is: "${currentQuestion}"`,
+      },
+    ];
+
+    // Call OpenAI
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are HELYAH, a helpful intake assistant." },
-        { role: "user", content: prompt }
-      ],
-      max_tokens: 150,
-      temperature: 0.4,
+      messages: formattedMessages,
+      temperature: 0.5,
+      max_tokens: 300,
     });
 
-    const reply =
-      completion?.choices?.[0]?.message?.content ||
-      "I'm here to help. Please continue.";
+    const reply = completion.choices[0].message.content.trim();
 
-    return new Response(JSON.stringify({ reply }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-
+    return NextResponse.json({ reply });
   } catch (error) {
-    console.error("AI ROUTE ERROR:", error);
-
-    return new Response(
-      JSON.stringify({ reply: "I'm sorry, something went wrong with the AI system." }),
+    console.error("AI Route Error:", error);
+    return NextResponse.json(
+      {
+        reply:
+          "I'm sorry — I had trouble processing that. Please continue your complaint and I will assist.",
+      },
       { status: 500 }
     );
   }

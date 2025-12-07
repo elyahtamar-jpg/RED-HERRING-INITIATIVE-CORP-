@@ -4,146 +4,113 @@ import { useState, useEffect, useRef } from "react";
 import { speakText, startRecognition } from "../utils/speech";
 
 export default function Chatbot() {
-  const [messages, setMessages] = useState([]);
+  const [history, setHistory] = useState([]);
   const [input, setInput] = useState("");
-  const [questionIndex, setQuestionIndex] = useState(0);
   const [isThinking, setIsThinking] = useState(false);
-
   const chatRef = useRef(null);
-
-  const questions = [
-    "What is your full name?",
-    "Please describe the incident you are reporting.",
-    "Which agency or officer was involved?",
-    "What was the date of the incident?",
-    "Where did the incident occur?",
-    "Do you believe your civil rights were violated under 18 USC 242?",
-    "Do you have evidence such as photos, witnesses, or documents?",
-    "What is your phone number so a director can contact you?",
-    "What is your email address?",
-    "Would you like a live director to call you immediately?"
-  ];
 
   // Auto-scroll
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
-  }, [messages]);
-
-  // Start intake
-  useEffect(() => {
-    addBot("Hello, I am Helyah, your Red Herring Intake Assistant.");
-    setTimeout(() => addBot(questions[0]), 800);
-  }, []);
-
-  function addBot(text) {
-    setMessages(prev => [...prev, { sender: "bot", text }]);
-    speakText(text);
-  }
-
-  function addUser(text) {
-    setMessages(prev => [...prev, { sender: "user", text }]);
-  }
+  }, [history]);
 
   async function handleSend() {
     if (!input.trim() || isThinking) return;
 
     const userText = input.trim();
     setInput("");
-    addUser(userText);
 
-    const isQuestion =
-      userText.endsWith("?") ||
-      ["what", "why", "how", "when", "where", "can", "should"].some(word =>
-        userText.toLowerCase().startsWith(word)
-      );
+    // Add user message locally
+    const updatedHistory = [
+      ...history,
+      { role: "user", content: userText },
+    ];
 
-    // Build OpenAI message format
-    const history = messages.map(m => ({
-      role: m.sender === "user" ? "user" : "assistant",
-      content: m.text,
-    }));
-
-    setIsThinking(true);
+    setHistory(updatedHistory);
 
     // Ask AI
+    setIsThinking(true);
     try {
-      const response = await fetch("/api/ai", {
+      const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          history,
+          history: updatedHistory,
           userInput: userText,
         }),
       });
 
-      const data = await response.json();
-      addBot(data.reply);
-    } catch (error) {
-      console.error(error);
-      addBot("I'm sorry, something went wrong.");
+      const data = await res.json();
+      const reply = data.reply || "I'm sorry, I didn't understand.";
+
+      const botMessage = { role: "assistant", content: reply };
+
+      setHistory((prev) => [...prev, botMessage]);
+      speakText(reply);
+
+    } catch (err) {
+      console.error("AI Chat Error:", err);
+      setHistory((prev) => [
+        ...prev,
+        { role: "assistant", content: "I'm sorry, something went wrong." },
+      ]);
     }
 
     setIsThinking(false);
-
-    // If the user asked a question → do NOT advance
-    if (isQuestion) return;
-
-    // Otherwise continue intake
-    const next = questionIndex + 1;
-    setQuestionIndex(next);
-
-    if (next < questions.length) {
-      setTimeout(() => addBot(questions[next]), 900);
-    } else {
-      setTimeout(() => addBot("Thank you. Your complaint has been submitted."), 1000);
-    }
   }
 
   function handleMic() {
     if (isThinking) return;
-    startRecognition(text => setInput(text));
+    startRecognition((text) => setInput(text));
   }
 
   return (
     <div style={{ maxWidth: "600px", margin: "0 auto" }}>
-      <h2>Red Herring Initiative – Complaint Intake</h2>
+      <h2>Red Herring Initiative – AI Intake Assistant</h2>
 
       <div
         ref={chatRef}
         style={{
+          border: "1px solid #ccc",
+          padding: "12px",
+          borderRadius: "10px",
           height: "400px",
           overflowY: "scroll",
-          border: "1px solid #ccc",
-          padding: 12,
-          borderRadius: 10,
-          marginBottom: 12,
+          marginBottom: "10px",
         }}
       >
-        {messages.map((m, i) => (
-          <div key={i} style={{ textAlign: m.sender === "user" ? "right" : "left" }}>
-            <b>{m.sender === "user" ? "You:" : "Helyah:"}</b> {m.text}
+        {history.map((m, i) => (
+          <div key={i} style={{ marginBottom: 4 }}>
+            <b>{m.role === "user" ? "You" : "Helyah"}:</b> {m.content}
           </div>
         ))}
 
-        {isThinking && <div><i>Helyah is thinking…</i></div>}
+        {isThinking && (
+          <div style={{ fontStyle: "italic" }}>Helyah is thinking…</div>
+        )}
       </div>
 
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", gap: "10px" }}>
         <input
           value={input}
-          onChange={e => setInput(e.target.value)}
-          placeholder="Type your answer…"
-          style={{ flex: 1, padding: 12, borderRadius: 8, border: "1px solid #aaa" }}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type here…"
+          style={{
+            flex: 1,
+            padding: "12px",
+            borderRadius: "8px",
+            border: "1px solid #aaa",
+          }}
           disabled={isThinking}
         />
 
-        <button onClick={handleSend} style={{ padding: 12 }} disabled={isThinking}>
+        <button onClick={handleSend} style={{ padding: "12px" }} disabled={isThinking}>
           Send
         </button>
 
-        <button onClick={handleMic} style={{ padding: 12 }} disabled={isThinking}>
+        <button onClick={handleMic} style={{ padding: "12px" }} disabled={isThinking}>
           🎤
         </button>
       </div>

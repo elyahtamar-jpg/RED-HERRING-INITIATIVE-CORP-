@@ -4,71 +4,97 @@ import { useState, useEffect, useRef } from "react";
 import { speakText, startRecognition } from "../utils/speech";
 
 export default function Chatbot() {
-  const [history, setHistory] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [questionIndex, setQuestionIndex] = useState(0);
   const [isThinking, setIsThinking] = useState(false);
+
   const chatRef = useRef(null);
 
-  // Auto-scroll
+  const questions = [
+    "Hello, I am Helyah, your Red Herring Intake Assistant. What is your full name?",
+    "Please describe the incident you are reporting.",
+    "Which agency or officer was involved?",
+    "What was the date of the incident?",
+    "Where did the incident occur?",
+    "Do you believe your civil rights were violated under 18 USC 242?",
+    "Do you have evidence such as photos, witnesses, or documents?",
+    "What is your phone number so a director can contact you?",
+    "What is your email address?",
+    "Would you like a live director to call you immediately?"
+  ];
+
+  useEffect(() => {
+    addBot(questions[0]);
+  }, []);
+
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
-  }, [history]);
+  }, [messages]);
+
+  function addBot(text) {
+    setMessages(prev => [...prev, { sender: "bot", text }]);
+    speakText(text);
+  }
+
+  function addUser(text) {
+    setMessages(prev => [...prev, { sender: "user", text }]);
+  }
 
   async function handleSend() {
     if (!input.trim() || isThinking) return;
 
     const userText = input.trim();
     setInput("");
+    addUser(userText);
 
-    // Add user message locally
-    const updatedHistory = [
-      ...history,
-      { role: "user", content: userText },
-    ];
+    const askingQuestion =
+      userText.endsWith("?") ||
+      userText.toLowerCase().startsWith("what") ||
+      userText.toLowerCase().startsWith("why") ||
+      userText.toLowerCase().startsWith("how") ||
+      userText.toLowerCase().startsWith("when") ||
+      userText.toLowerCase().startsWith("where");
 
-    setHistory(updatedHistory);
-
-    // Ask AI
     setIsThinking(true);
-    try {
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          history: updatedHistory,
-          userInput: userText,
-        }),
-      });
 
-      const data = await res.json();
-      const reply = data.reply || "I'm sorry, I didn't understand.";
+    const res = await fetch("/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages }),
+    });
 
-      const botMessage = { role: "assistant", content: reply };
-
-      setHistory((prev) => [...prev, botMessage]);
-      speakText(reply);
-
-    } catch (err) {
-      console.error("AI Chat Error:", err);
-      setHistory((prev) => [
-        ...prev,
-        { role: "assistant", content: "I'm sorry, something went wrong." },
-      ]);
-    }
+    const data = await res.json();
+    const aiReply = data.reply;
 
     setIsThinking(false);
+
+    addBot(aiReply);
+
+    // If the user asked a question — STOP here.
+    if (askingQuestion) return;
+
+    // Otherwise continue scripted intake
+    const nextIndex = questionIndex + 1;
+    setQuestionIndex(nextIndex);
+
+    if (nextIndex < questions.length) {
+      setTimeout(() => addBot(questions[nextIndex]), 800);
+    } else {
+      addBot("Thank you. Your complaint has been submitted.");
+    }
   }
 
   function handleMic() {
     if (isThinking) return;
-    startRecognition((text) => setInput(text));
+    startRecognition(text => setInput(text));
   }
 
   return (
     <div style={{ maxWidth: "600px", margin: "0 auto" }}>
-      <h2>Red Herring Initiative – AI Intake Assistant</h2>
+      <h2>Red Herring Initiative – Complaint Intake</h2>
 
       <div
         ref={chatRef}
@@ -77,42 +103,27 @@ export default function Chatbot() {
           padding: "12px",
           borderRadius: "10px",
           height: "400px",
-          overflowY: "scroll",
+          overflowY: "auto",
           marginBottom: "10px",
         }}
       >
-        {history.map((m, i) => (
-          <div key={i} style={{ marginBottom: 4 }}>
-            <b>{m.role === "user" ? "You" : "Helyah"}:</b> {m.content}
+        {messages.map((m, i) => (
+          <div key={i} style={{ textAlign: m.sender === "user" ? "right" : "left" }}>
+            <b>{m.sender === "user" ? "You:" : "Helyah:"}</b> {m.text}
           </div>
         ))}
-
-        {isThinking && (
-          <div style={{ fontStyle: "italic" }}>Helyah is thinking…</div>
-        )}
+        {isThinking && <i>Helyah is thinking…</i>}
       </div>
 
       <div style={{ display: "flex", gap: "10px" }}>
         <input
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type here…"
-          style={{
-            flex: 1,
-            padding: "12px",
-            borderRadius: "8px",
-            border: "1px solid #aaa",
-          }}
-          disabled={isThinking}
+          onChange={e => setInput(e.target.value)}
+          placeholder="Type your answer…"
+          style={{ flex: 1, padding: "12px" }}
         />
-
-        <button onClick={handleSend} style={{ padding: "12px" }} disabled={isThinking}>
-          Send
-        </button>
-
-        <button onClick={handleMic} style={{ padding: "12px" }} disabled={isThinking}>
-          🎤
-        </button>
+        <button onClick={handleSend}>Send</button>
+        <button onClick={handleMic}>🎤</button>
       </div>
     </div>
   );

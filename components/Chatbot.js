@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { speakText, startRecognition } from "@/utils/speech";
+import { speakText, startRecognition } from "../utils/speech";
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [isThinking, setIsThinking] = useState(false);
-
   const chatRef = useRef(null);
 
   const questions = [
@@ -24,12 +23,10 @@ export default function Chatbot() {
     "Would you like a live director to call you immediately?"
   ];
 
-  // Start with the first question
   useEffect(() => {
     addBot(questions[0]);
   }, []);
 
-  // Auto-scroll chat
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -52,61 +49,64 @@ export default function Chatbot() {
     setInput("");
     addUser(userText);
 
-    // Build conversation history
-    const conversation = [
-      ...messages,
-      { sender: "user", text: userText },
-    ];
+    const askingQuestion =
+      userText.endsWith("?") ||
+      userText.toLowerCase().startsWith("what") ||
+      userText.toLowerCase().startsWith("why") ||
+      userText.toLowerCase().startsWith("how") ||
+      userText.toLowerCase().startsWith("when") ||
+      userText.toLowerCase().startsWith("where");
 
     setIsThinking(true);
 
+    // Ask AI
     let aiReply = null;
-
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: conversation,
-          currentQuestion: questions[questionIndex] || "",
-        }),
+          messages: [
+            ...messages,
+            { sender: "user", text: userText }
+          ],
+          currentQuestion: questions[questionIndex] || ""
+        })
       });
 
       if (res.ok) {
         const data = await res.json();
-        aiReply = data.reply;
-      } else {
-        aiReply = "I'm sorry — I'm having trouble responding right now.";
+        aiReply = data.reply || null;
       }
     } catch (err) {
-      console.error("AI error:", err);
-      aiReply = "Something went wrong. Please continue.";
+      aiReply = "I'm sorry — I had trouble responding. Please continue.";
     }
 
     setIsThinking(false);
 
-    if (aiReply) {
-      addBot(aiReply);
-    }
+    if (aiReply) addBot(aiReply);
 
-    // Advance ONLY after giving a real answer
-    const next = questionIndex + 1;
-    setQuestionIndex(next);
+    // If user asked a question → DO NOT move forward
+    if (askingQuestion) return;
 
-    if (next < questions.length) {
-      setTimeout(() => addBot(questions[next]), 900);
+    // Continue scripted intake
+    const nextIndex = questionIndex + 1;
+    setQuestionIndex(nextIndex);
+
+    if (nextIndex < questions.length) {
+      setTimeout(() => addBot(questions[nextIndex]), 1000);
     } else {
       setTimeout(() => {
         addBot(
-          "Thank you. Your complaint has been submitted to the Red Herring Initiative."
+          "Thank you. Your complaint has been submitted to the Red Herring Initiative. A director may contact you after review."
         );
-      }, 900);
+      }, 800);
     }
   }
 
   function handleMic() {
     if (isThinking) return;
-    startRecognition((text) => setInput(text));
+    startRecognition((transcript) => setInput(transcript));
   }
 
   return (
@@ -119,7 +119,7 @@ export default function Chatbot() {
           border: "1px solid #ccc",
           padding: "12px",
           borderRadius: "10px",
-          height: "400px",
+          height: "420px",
           overflowY: "scroll",
           marginBottom: "10px",
         }}
@@ -137,7 +137,7 @@ export default function Chatbot() {
         ))}
 
         {isThinking && (
-          <div style={{ fontStyle: "italic", marginTop: 4 }}>Helyah is thinking…</div>
+          <div style={{ fontStyle: "italic" }}>Helyah is thinking…</div>
         )}
       </div>
 
@@ -145,21 +145,20 @@ export default function Chatbot() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your response…"
-          disabled={isThinking}
+          placeholder="Type your answer…"
           style={{
             flex: 1,
             padding: "12px",
             borderRadius: "8px",
             border: "1px solid #aaa",
           }}
+          disabled={isThinking}
         />
 
-        <button onClick={handleSend} disabled={isThinking} style={{ padding: "12px" }}>
+        <button onClick={handleSend} disabled={isThinking}>
           Send
         </button>
-
-        <button onClick={handleMic} disabled={isThinking} style={{ padding: "12px" }}>
+        <button onClick={handleMic} disabled={isThinking}>
           🎤
         </button>
       </div>

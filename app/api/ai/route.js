@@ -5,43 +5,54 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Helyah system instructions
+// Helyah personality + required behavior
 const SYSTEM_PROMPT = `
-You are Helyah, the intelligent intake assistant for the Red Herring Initiative.
-
-Your responsibilities:
-- Answer any question the user asks BEFORE moving on.
-- Never skip or ignore questions.
-- Keep explanations simple, clear, and correct.
-- Provide general legal information, not legal advice.
-- If asked about 18 USC 242, explain it plainly.
-- Stay supportive and professional.
+You are Helyah, the official intake assistant for the Red Herring Initiative.
+Rules:
+1. Always answer the user's question fully and clearly.
+2. NEVER skip their question.
+3. AFTER answering, continue the scripted intake question flow.
+4. Keep your tone professional, helpful, and calm.
+5. Do NOT give legal advice — only general informational explanations.
+6. If user asks about 18 USC 242, explain it in simple, plain language.
+7. Never ignore or redirect a question.
 `;
 
 export async function POST(req) {
   try {
-    const { messages } = await req.json();
+    const { messages, currentQuestion } = await req.json();
 
+    // Combine history into OpenAI format
     const formattedMessages = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...messages.map((m) => ({
+      ...messages.map(m => ({
         role: m.sender === "user" ? "user" : "assistant",
-        content: m.text,
+        content: m.text
       })),
+      {
+        role: "system",
+        content: `After answering the user's question, you MUST also ask this next scripted intake question: "${currentQuestion}".`
+      }
     ];
 
+    // Call OpenAI
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: formattedMessages,
-      temperature: 0.6,
+      max_tokens: 300,
+      temperature: 0.4
     });
 
     const reply = completion.choices[0].message.content.trim();
+
     return NextResponse.json({ reply });
-  } catch (err) {
-    console.error("AI ERROR:", err);
+  } catch (error) {
+    console.error("AI Route Error:", error);
     return NextResponse.json(
-      { reply: "Helyah experienced an error, please continue." },
+      {
+        reply:
+          "I’m sorry — I had trouble processing that. Please continue and I will assist."
+      },
       { status: 500 }
     );
   }

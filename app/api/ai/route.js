@@ -5,54 +5,46 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Helyah personality + required behavior
 const SYSTEM_PROMPT = `
-You are Helyah, the official intake assistant for the Red Herring Initiative.
-Rules:
-1. Always answer the user's question fully and clearly.
-2. NEVER skip their question.
-3. AFTER answering, continue the scripted intake question flow.
-4. Keep your tone professional, helpful, and calm.
-5. Do NOT give legal advice — only general informational explanations.
-6. If user asks about 18 USC 242, explain it in simple, plain language.
-7. Never ignore or redirect a question.
+You are Helyah, the intelligent intake assistant for The Red Herring Initiative.
+- Always answer the user's question first.
+- After answering, allow the scripted intake to continue.
+- Never ignore a question.
+- Provide plain-language explanations.
+- If asked about 18 USC 242, explain clearly and simply.
+- Do not give legal advice; provide general information only.
 `;
 
 export async function POST(req) {
   try {
     const { messages, currentQuestion } = await req.json();
 
-    // Combine history into OpenAI format
     const formattedMessages = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...messages.map(m => ({
+      ...messages.map((m) => ({
         role: m.sender === "user" ? "user" : "assistant",
-        content: m.text
+        content: m.text,
       })),
       {
         role: "system",
-        content: `After answering the user's question, you MUST also ask this next scripted intake question: "${currentQuestion}".`
-      }
+        content: `The next scripted intake question is: "${currentQuestion}".`,
+      },
     ];
 
-    // Call OpenAI
-    const completion = await client.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: formattedMessages,
-      max_tokens: 300,
-      temperature: 0.4
+      temperature: 0.4,
+      max_tokens: 250,
     });
 
-    const reply = completion.choices[0].message.content.trim();
+    const reply = response.choices[0].message.content.trim();
 
     return NextResponse.json({ reply });
-  } catch (error) {
-    console.error("AI Route Error:", error);
+  } catch (err) {
+    console.error("AI Route Error:", err);
     return NextResponse.json(
-      {
-        reply:
-          "I’m sorry — I had trouble processing that. Please continue and I will assist."
-      },
+      { reply: "I'm sorry, something went wrong. Please continue." },
       { status: 500 }
     );
   }

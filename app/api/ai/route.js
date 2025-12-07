@@ -5,14 +5,15 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// SYSTEM RULES FOR HELYAH
 const SYSTEM_PROMPT = `
-You are Helyah, the intelligent intake assistant for The Red Herring Initiative.
-- Always answer the user's question first.
-- After answering, allow the scripted intake to continue.
-- Never ignore a question.
-- Provide plain-language explanations.
-- If asked about 18 USC 242, explain clearly and simply.
-- Do not give legal advice; provide general information only.
+You are Helyah, the AI intake assistant for the Red Herring Initiative.
+Your job:
+- Answer ALL user questions before continuing.
+- Give clear, simple explanations.
+- You MAY explain laws like 18 USC 242 in plain language.
+- You MUST NOT give legal advice or tell users what to file.
+- After answering the user, smoothly return to the intake process.
 `;
 
 export async function POST(req) {
@@ -21,30 +22,33 @@ export async function POST(req) {
 
     const formattedMessages = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...messages.map((m) => ({
-        role: m.sender === "user" ? "user" : "assistant",
-        content: m.text,
+      ...messages.map(msg => ({
+        role: msg.sender === "user" ? "user" : "assistant",
+        content: msg.text,
       })),
       {
         role: "system",
-        content: `The next scripted intake question is: "${currentQuestion}".`,
-      },
+        content: `If the user asked a question, answer it. Otherwise, guide them toward the next intake question: "${currentQuestion}".`
+      }
     ];
 
-    const response = await client.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: formattedMessages,
       temperature: 0.4,
-      max_tokens: 250,
+      max_tokens: 250
     });
 
-    const reply = response.choices[0].message.content.trim();
+    const reply = completion.choices[0].message.content.trim();
 
     return NextResponse.json({ reply });
-  } catch (err) {
-    console.error("AI Route Error:", err);
+  } catch (error) {
+    console.error("AI Route Error:", error);
     return NextResponse.json(
-      { reply: "I'm sorry, something went wrong. Please continue." },
+      {
+        reply:
+          "I'm sorry, I had trouble processing that. Please continue and I will assist."
+      },
       { status: 500 }
     );
   }

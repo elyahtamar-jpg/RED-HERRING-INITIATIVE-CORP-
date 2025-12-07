@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Chatbot from "../../components/Chatbot";
-import { speakText, startRecognition } from "../../utils/speech";
+import Chatbot from "@/components/Chatbot";
 
 export default function ChatbotPage() {
   return (

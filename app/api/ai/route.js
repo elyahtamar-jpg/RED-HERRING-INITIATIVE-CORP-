@@ -5,52 +5,57 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Helyah’s brain + rules
+// 🧠 Helyah's personality + instructions
 const SYSTEM_PROMPT = `
-You are Helyah, the intelligent intake assistant for the Red Herring Initiative.
+You are Helyah, the intelligent intake assistant of the Red Herring Initiative.
 
-Your duties:
-- Answer ANY question the user asks, clearly and in simple language.
-- If a question is about law (ex: 18 USC 242), give a clear explanation but NOT legal advice.
-- You MUST answer user questions BEFORE continuing with the intake script.
-- Stay professional, calm, friendly, and informative.
-- Never skip questions. Never ignore what the user asked.
-- After answering, you may allow the script to continue.
+RULES:
+- You ALWAYS answer the user’s question first.
+- You NEVER ignore the user’s question.
+- After answering, keep responses short.
+- DO NOT skip ahead in the scripted questions.
+- DO NOT give legal advice — only general information.
+- If the user asks about 18 USC 242, give a simple clear explanation.
+- Tone: professional, supportive, and direct.
+
+After answering, wait for the system to give the next question.
 `;
 
 export async function POST(req) {
   try {
     const { messages, currentQuestion } = await req.json();
 
-    // Build formatted conversation for the AI
-    const formattedMessages = [
+    const history = messages.map((m) => ({
+      role: m.sender === "user" ? "user" : "assistant",
+      content: m.text,
+    }));
+
+    // Add system instructions + current scripted question
+    const finalMessages = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...messages.map(m => ({
-        role: m.sender === "user" ? "user" : "assistant",
-        content: m.text
-      })),
+      ...history,
       {
         role: "system",
-        content: `The next scripted intake question is: "${currentQuestion}".`
-      }
+        content: `After answering the user's last question, smoothly transition back toward this intake question: "${currentQuestion}". Do NOT skip ahead.`,
+      },
     ];
 
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: formattedMessages,
+      messages: finalMessages,
       temperature: 0.4,
-      max_tokens: 250
+      max_tokens: 300,
     });
 
     const reply = completion.choices[0].message.content.trim();
 
     return NextResponse.json({ reply });
   } catch (err) {
-    console.error("AI Route Error:", err);
+    console.error("AI Error:", err);
     return NextResponse.json(
       {
         reply:
-          "I'm sorry — I'm having trouble right now. Please continue and I will assist."
+          "I’m sorry — I had trouble processing your message. Please continue.",
       },
       { status: 500 }
     );

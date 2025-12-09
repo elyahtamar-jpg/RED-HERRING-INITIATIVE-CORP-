@@ -11,7 +11,6 @@ export default function Chatbot() {
 
   const chatRef = useRef(null);
 
-  // Scripted questions
   const questions = [
     "Hello, I am Helyah, your Red Herring Intake Assistant. What is your full name?",
     "Please describe the incident you are reporting.",
@@ -25,110 +24,125 @@ export default function Chatbot() {
     "Would you like a live director to call you immediately?"
   ];
 
-  // Start conversation
-  useEffect(() => {
-    addBot(questions[0]);
-  }, []);
-
-  // Auto-scroll
+  // Auto-scroll chat window
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Add bot message
+  // Start with question 1
+  useEffect(() => {
+    addBot(questions[0]);
+  }, []);
+
   function addBot(text) {
-    setMessages((prev) => [...prev, { sender: "bot", text }]);
+    setMessages(prev => [...prev, { sender: "bot", text }]);
     speakText(text);
   }
 
-  // Add user message
   function addUser(text) {
-    setMessages((prev) => [...prev, { sender: "user", text }]);
+    setMessages(prev => [...prev, { sender: "user", text }]);
   }
 
-  // Handle send
   async function handleSend() {
-    if (!input.trim()) return;
+    if (!input.trim() || isThinking) return;
 
     const userText = input.trim();
-    addUser(userText);
     setInput("");
+
+    addUser(userText);
+
+    const conversation = [
+      ...messages,
+      { sender: "user", text: userText },
+    ];
 
     setIsThinking(true);
 
-    // Send user question + history to AI
     let aiReply = null;
 
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [...messages, { sender: "user", text: userText }],
-          currentQuestion: questions[questionIndex]
-        })
+          messages: conversation,
+          currentQuestion: questions[questionIndex] || "",
+        }),
       });
 
-      const data = await res.json();
-      aiReply = data.reply;
-    } catch (e) {
-      aiReply = "I’m sorry, I had trouble responding. Please continue.";
+      if (res.ok) {
+        const data = await res.json();
+        aiReply = data.reply;
+      }
+    } catch (err) {
+      aiReply = "I apologize — I had trouble processing that.";
     }
 
     setIsThinking(false);
-    addBot(aiReply);
 
-    // MOVE TO NEXT QUESTION
+    if (aiReply) {
+      addBot(aiReply);
+    }
+
+    // If the user asked a question, DO NOT move to next intake question
+    const isQuestion = userText.endsWith("?") ||
+      userText.toLowerCase().startsWith("what") ||
+      userText.toLowerCase().startsWith("why") ||
+      userText.toLowerCase().startsWith("how") ||
+      userText.toLowerCase().startsWith("when") ||
+      userText.toLowerCase().startsWith("where");
+
+    if (isQuestion) return;
+
     const nextIndex = questionIndex + 1;
-    if (nextIndex < questions.length && !userText.endsWith("?")) {
-      setQuestionIndex(nextIndex);
-      setTimeout(() => addBot(questions[nextIndex]), 600);
+    setQuestionIndex(nextIndex);
+
+    if (nextIndex < questions.length) {
+      addBot(questions[nextIndex]);
+    } else {
+      addBot("Thank you. Your complaint has been submitted.");
     }
   }
 
-  // Microphone
   function handleMic() {
-    startRecognition((text) => setInput(text));
+    if (isThinking) return;
+    startRecognition(text => setInput(text));
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: "0 auto" }}>
-      <h2>Red Herring Initiative – Complaint Intake</h2>
-
+    <div>
       <div
         ref={chatRef}
         style={{
-          height: 400,
-          overflowY: "scroll",
           border: "1px solid #ccc",
-          padding: 12,
-          borderRadius: 8,
-          marginBottom: 10,
+          padding: "12px",
+          borderRadius: "10px",
+          height: "400px",
+          overflowY: "scroll",
+          marginBottom: "10px",
         }}
       >
         {messages.map((m, i) => (
-          <div
-            key={i}
-            style={{ textAlign: m.sender === "user" ? "right" : "left" }}
-          >
-            <b>{m.sender === "user" ? "You: " : "Helyah: "}</b>
-            {m.text}
+          <div key={i} style={{ textAlign: m.sender === "user" ? "right" : "left" }}>
+            <b>{m.sender === "user" ? "You:" : "Helyah:"}</b> {m.text}
           </div>
         ))}
 
-        {isThinking && <div><i>Helyah is thinking…</i></div>}
+        {isThinking && (
+          <div style={{ fontStyle: "italic", marginTop: 5 }}>
+            Helyah is thinking…
+          </div>
+        )}
       </div>
 
-      <div style={{ display: "flex", gap: 10 }}>
+      <div style={{ display: "flex", gap: "10px" }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type your response…"
-          style={{ flex: 1, padding: 10 }}
+          style={{ flex: 1, padding: "12px", borderRadius: "8px" }}
         />
 
         <button onClick={handleSend}>Send</button>

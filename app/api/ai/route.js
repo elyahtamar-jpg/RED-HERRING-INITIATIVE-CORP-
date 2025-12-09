@@ -1,62 +1,51 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
+// Create OpenAI client
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 🧠 Helyah's personality + instructions
+// Helyah's personality + mission
 const SYSTEM_PROMPT = `
-You are Helyah, the intelligent intake assistant of the Red Herring Initiative.
+You are Helyah, the intelligent intake assistant for the Red Herring Initiative.
 
-RULES:
-- You ALWAYS answer the user’s question first.
-- You NEVER ignore the user’s question.
-- After answering, keep responses short.
-- DO NOT skip ahead in the scripted questions.
-- DO NOT give legal advice — only general information.
-- If the user asks about 18 USC 242, give a simple clear explanation.
-- Tone: professional, supportive, and direct.
-
-After answering, wait for the system to give the next question.
+Your responsibilities:
+- ALWAYS answer the user's question in simple, clear language.
+- DO NOT skip user questions.
+- After answering, allow the scripted intake to continue.
+- Do NOT give legal advice — only general explanations.
+- If asked about 18 USC 242, explain it clearly and simply.
+- Stay respectful, supportive, and professional at all times.
 `;
 
 export async function POST(req) {
   try {
     const { messages, currentQuestion } = await req.json();
 
-    const history = messages.map((m) => ({
-      role: m.sender === "user" ? "user" : "assistant",
-      content: m.text,
-    }));
-
-    // Add system instructions + current scripted question
-    const finalMessages = [
+    const formatted = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...history,
-      {
-        role: "system",
-        content: `After answering the user's last question, smoothly transition back toward this intake question: "${currentQuestion}". Do NOT skip ahead.`,
-      },
+      ...messages.map(m => ({
+        role: m.sender === "user" ? "user" : "assistant",
+        content: m.text
+      })),
+      { role: "system", content: `The next scripted question is: "${currentQuestion}"` }
     ];
 
-    const completion = await client.chat.completions.create({
+    const ai = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: finalMessages,
-      temperature: 0.4,
+      messages: formatted,
       max_tokens: 300,
+      temperature: 0.4
     });
 
-    const reply = completion.choices[0].message.content.trim();
-
+    const reply = ai.choices[0].message.content.trim();
     return NextResponse.json({ reply });
+
   } catch (err) {
-    console.error("AI Error:", err);
+    console.error("AI ROUTE ERROR:", err);
     return NextResponse.json(
-      {
-        reply:
-          "I’m sorry — I had trouble processing your message. Please continue.",
-      },
+      { reply: "I'm sorry — there was a temporary issue processing that." },
       { status: 500 }
     );
   }

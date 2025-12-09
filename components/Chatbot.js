@@ -19,45 +19,39 @@ export default function Chatbot() {
     "Where did the incident occur?",
     "Do you believe your civil rights were violated under 18 USC 242?",
     "Do you have evidence such as photos, witnesses, or documents?",
-    "What is your phone number so a director can contact you?",
+    "What is your phone number?",
     "What is your email address?",
     "Would you like a live director to call you immediately?"
   ];
 
-  // Scroll effect
+  useEffect(() => {
+    addBot(questions[0]);
+  }, []);
+
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Ask first question
-  useEffect(() => {
-    addBot(questions[0]);
-  }, []);
-
   function addBot(text) {
-    setMessages(prev => [...prev, { sender: "bot", text }]);
+    setMessages((prev) => [...prev, { sender: "bot", text }]);
     speakText(text);
   }
 
   function addUser(text) {
-    setMessages(prev => [...prev, { sender: "user", text }]);
+    setMessages((prev) => [...prev, { sender: "user", text }]);
   }
 
-  // Detect user questions
-  function userAskedRealQuestion(text) {
-    const t = text.toLowerCase();
+  function userAskedQuestion(text) {
+    const q = text.trim().toLowerCase();
     return (
-      t.endsWith("?") ||
-      t.startsWith("what") ||
-      t.startsWith("why") ||
-      t.startsWith("how") ||
-      t.startsWith("when") ||
-      t.startsWith("where") ||
-      t.startsWith("who") ||
-      t.includes("explain") ||
-      t.includes("tell me")
+      q.startsWith("what") ||
+      q.startsWith("why") ||
+      q.startsWith("how") ||
+      q.startsWith("when") ||
+      q.startsWith("where") ||
+      q.endsWith("?")
     );
   }
 
@@ -65,55 +59,52 @@ export default function Chatbot() {
     if (!input.trim() || isThinking) return;
 
     const userText = input.trim();
-    setInput("");
     addUser(userText);
+    setInput("");
 
-    const isUserAsking = userAskedRealQuestion(userText);
-
-    const conversation = [...messages, { sender: "user", text: userText }];
-
+    const isUserQuestion = userAskedQuestion(userText);
     setIsThinking(true);
 
     let aiReply = null;
-
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          messages: conversation,
-          currentQuestion: questions[questionIndex]
-        })
+          messages,
+          userText,
+          currentQuestion: questions[questionIndex],
+        }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        aiReply = data.reply;
-      } else {
-        aiReply = "I'm sorry, I could not process that.";
-      }
-    } catch (err) {
-      aiReply = "There was a connection issue. Please continue.";
+      const data = await res.json();
+      aiReply = data.reply || null;
+    } catch {
+      aiReply = "I'm sorry, something went wrong. Please continue.";
     }
 
     setIsThinking(false);
 
-    // Always answer user questions
     if (aiReply) addBot(aiReply);
 
-    // STOP scripted questions when user is asking something
-    if (isUserAsking) return;
+    // If user asked a real question → DO NOT move forward
+    if (isUserQuestion) return;
 
-    // Continue scripted intake
+    // Continue with next scripted intake question
     const nextIndex = questionIndex + 1;
-    setQuestionIndex(nextIndex);
-
     if (nextIndex < questions.length) {
-      setTimeout(() => addBot(questions[nextIndex]), 600);
+      setQuestionIndex(nextIndex);
+      setTimeout(() => addBot(questions[nextIndex]), 900);
     } else {
-      setTimeout(() => {
-        addBot("Thank you. Your complaint has been submitted.");
-      }, 600);
+      setTimeout(
+        () =>
+          addBot(
+            "Thank you. Your complaint has been submitted. A director may contact you."
+          ),
+        900
+      );
     }
   }
 
@@ -134,20 +125,23 @@ export default function Chatbot() {
           borderRadius: "10px",
           height: "400px",
           overflowY: "scroll",
-          marginBottom: "10px"
+          marginBottom: "10px",
         }}
       >
         {messages.map((m, i) => (
           <div
             key={i}
-            style={{ textAlign: m.sender === "user" ? "right" : "left", marginBottom: 6 }}
+            style={{
+              textAlign: m.sender === "user" ? "right" : "left",
+              marginBottom: 4,
+            }}
           >
             <b>{m.sender === "user" ? "You:" : "Helyah:"}</b> {m.text}
           </div>
         ))}
 
         {isThinking && (
-          <div style={{ fontStyle: "italic", marginTop: 4 }}>
+          <div style={{ fontStyle: "italic", color: "gray" }}>
             Helyah is thinking…
           </div>
         )}
@@ -156,22 +150,21 @@ export default function Chatbot() {
       <div style={{ display: "flex", gap: "10px" }}>
         <input
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={(e) => setInput(e.target.value)}
           placeholder="Type your answer…"
           style={{
             flex: 1,
             padding: "12px",
             borderRadius: "8px",
-            border: "1px solid #aaa"
+            border: "1px solid #aaa",
           }}
-          disabled={isThinking}
         />
 
-        <button onClick={handleSend} disabled={isThinking} style={{ padding: "12px" }}>
+        <button onClick={handleSend} style={{ padding: "12px" }}>
           Send
         </button>
 
-        <button onClick={handleMic} disabled={isThinking} style={{ padding: "12px" }}>
+        <button onClick={handleMic} style={{ padding: "12px" }}>
           🎤
         </button>
       </div>

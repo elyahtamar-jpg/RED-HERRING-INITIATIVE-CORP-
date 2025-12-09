@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { speakText, startRecognition } from "../utils/speech";
+import { speakText, startRecognition } from "@/utils/speech";
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([]);
@@ -11,6 +11,7 @@ export default function Chatbot() {
 
   const chatRef = useRef(null);
 
+  // Scripted questions
   const questions = [
     "Hello, I am Helyah, your Red Herring Intake Assistant. What is your full name?",
     "Please describe the incident you are reporting.",
@@ -19,154 +20,119 @@ export default function Chatbot() {
     "Where did the incident occur?",
     "Do you believe your civil rights were violated under 18 USC 242?",
     "Do you have evidence such as photos, witnesses, or documents?",
-    "What is your phone number?",
+    "What is your phone number so a director can contact you?",
     "What is your email address?",
     "Would you like a live director to call you immediately?"
   ];
 
+  // Start conversation
   useEffect(() => {
     addBot(questions[0]);
   }, []);
 
+  // Auto-scroll
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [messages]);
 
+  // Add bot message
   function addBot(text) {
     setMessages((prev) => [...prev, { sender: "bot", text }]);
     speakText(text);
   }
 
+  // Add user message
   function addUser(text) {
     setMessages((prev) => [...prev, { sender: "user", text }]);
   }
 
-  function userAskedQuestion(text) {
-    const q = text.trim().toLowerCase();
-    return (
-      q.startsWith("what") ||
-      q.startsWith("why") ||
-      q.startsWith("how") ||
-      q.startsWith("when") ||
-      q.startsWith("where") ||
-      q.endsWith("?")
-    );
-  }
-
+  // Handle send
   async function handleSend() {
-    if (!input.trim() || isThinking) return;
+    if (!input.trim()) return;
 
     const userText = input.trim();
     addUser(userText);
     setInput("");
 
-    const isUserQuestion = userAskedQuestion(userText);
     setIsThinking(true);
 
+    // Send user question + history to AI
     let aiReply = null;
+
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          messages,
-          userText,
-          currentQuestion: questions[questionIndex],
-        }),
+          messages: [...messages, { sender: "user", text: userText }],
+          currentQuestion: questions[questionIndex]
+        })
       });
 
       const data = await res.json();
-      aiReply = data.reply || null;
-    } catch {
-      aiReply = "I'm sorry, something went wrong. Please continue.";
+      aiReply = data.reply;
+    } catch (e) {
+      aiReply = "I’m sorry, I had trouble responding. Please continue.";
     }
 
     setIsThinking(false);
+    addBot(aiReply);
 
-    if (aiReply) addBot(aiReply);
-
-    // If user asked a real question → DO NOT move forward
-    if (isUserQuestion) return;
-
-    // Continue with next scripted intake question
+    // MOVE TO NEXT QUESTION
     const nextIndex = questionIndex + 1;
-    if (nextIndex < questions.length) {
+    if (nextIndex < questions.length && !userText.endsWith("?")) {
       setQuestionIndex(nextIndex);
-      setTimeout(() => addBot(questions[nextIndex]), 900);
-    } else {
-      setTimeout(
-        () =>
-          addBot(
-            "Thank you. Your complaint has been submitted. A director may contact you."
-          ),
-        900
-      );
+      setTimeout(() => addBot(questions[nextIndex]), 600);
     }
   }
 
+  // Microphone
   function handleMic() {
-    if (isThinking) return;
     startRecognition((text) => setInput(text));
   }
 
   return (
-    <div style={{ maxWidth: "600px", margin: "0 auto" }}>
+    <div style={{ maxWidth: 600, margin: "0 auto" }}>
       <h2>Red Herring Initiative – Complaint Intake</h2>
 
       <div
         ref={chatRef}
         style={{
-          border: "1px solid #ccc",
-          padding: "12px",
-          borderRadius: "10px",
-          height: "400px",
+          height: 400,
           overflowY: "scroll",
-          marginBottom: "10px",
+          border: "1px solid #ccc",
+          padding: 12,
+          borderRadius: 8,
+          marginBottom: 10,
         }}
       >
         {messages.map((m, i) => (
           <div
             key={i}
-            style={{
-              textAlign: m.sender === "user" ? "right" : "left",
-              marginBottom: 4,
-            }}
+            style={{ textAlign: m.sender === "user" ? "right" : "left" }}
           >
-            <b>{m.sender === "user" ? "You:" : "Helyah:"}</b> {m.text}
+            <b>{m.sender === "user" ? "You: " : "Helyah: "}</b>
+            {m.text}
           </div>
         ))}
 
-        {isThinking && (
-          <div style={{ fontStyle: "italic", color: "gray" }}>
-            Helyah is thinking…
-          </div>
-        )}
+        {isThinking && <div><i>Helyah is thinking…</i></div>}
       </div>
 
-      <div style={{ display: "flex", gap: "10px" }}>
+      <div style={{ display: "flex", gap: 10 }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your answer…"
-          style={{
-            flex: 1,
-            padding: "12px",
-            borderRadius: "8px",
-            border: "1px solid #aaa",
-          }}
+          placeholder="Type your response…"
+          style={{ flex: 1, padding: 10 }}
         />
 
-        <button onClick={handleSend} style={{ padding: "12px" }}>
-          Send
-        </button>
-
-        <button onClick={handleMic} style={{ padding: "12px" }}>
-          🎤
-        </button>
+        <button onClick={handleSend}>Send</button>
+        <button onClick={handleMic}>🎤</button>
       </div>
     </div>
   );

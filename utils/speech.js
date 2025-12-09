@@ -6,12 +6,12 @@ export function speakText(text) {
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = 1;
   utter.pitch = 1;
-  utter.volume = 1;
-  window.speechSynthesis.cancel();
+
+  window.speechSynthesis.cancel(); // stop overlapping
   window.speechSynthesis.speak(utter);
 }
 
-// Speech-to-Text (keeps mic open longer)
+// Speech-to-Text
 export function startRecognition(callback) {
   if (typeof window === "undefined") return;
 
@@ -19,13 +19,13 @@ export function startRecognition(callback) {
     window.SpeechRecognition || window.webkitSpeechRecognition;
 
   if (!SpeechRecognition) {
-    callback("Speech recognition not supported on this device.");
+    callback("Speech recognition is not supported on this device.");
     return;
   }
 
   const recognition = new SpeechRecognition();
   recognition.lang = "en-US";
-  recognition.continuous = false;       
+  recognition.continuous = false; // ⬅️ required for Next.js 13
   recognition.interimResults = false;
 
   recognition.onresult = (event) => {
@@ -34,7 +34,7 @@ export function startRecognition(callback) {
   };
 
   recognition.onerror = () => {
-    callback("");
+    callback("Audio error. Try again.");
   };
 
   recognition.start();

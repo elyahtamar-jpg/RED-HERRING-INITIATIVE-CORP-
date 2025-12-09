@@ -1,4 +1,4 @@
-// Text-to-Speech
+// TEXT → SPEECH
 export function speakText(text) {
   if (typeof window === "undefined") return;
   if (!window.speechSynthesis) return;
@@ -6,12 +6,12 @@ export function speakText(text) {
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = 1;
   utter.pitch = 1;
-
-  window.speechSynthesis.cancel(); // stop overlapping
+  utter.volume = 1;
+  window.speechSynthesis.cancel(); // stop overlap
   window.speechSynthesis.speak(utter);
 }
 
-// Speech-to-Text
+// SPEECH → TEXT
 export function startRecognition(callback) {
   if (typeof window === "undefined") return;
 
@@ -25,7 +25,7 @@ export function startRecognition(callback) {
 
   const recognition = new SpeechRecognition();
   recognition.lang = "en-US";
-  recognition.continuous = false; // ⬅️ required for Next.js 13
+  recognition.continuous = false; // listens once per button press
   recognition.interimResults = false;
 
   recognition.onresult = (event) => {
@@ -34,7 +34,7 @@ export function startRecognition(callback) {
   };
 
   recognition.onerror = () => {
-    callback("Audio error. Try again.");
+    callback("Sorry, I couldn’t hear that. Try again.");
   };
 
   recognition.start();

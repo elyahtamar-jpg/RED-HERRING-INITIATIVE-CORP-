@@ -1,196 +1,122 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Red Herring Voice Intake (2025 Safe)</title>
+<title>Red Herring Initiative – Complaint Intake</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-
 <style>
-  body { font-family: system-ui, Arial, sans-serif; }
-
-  #toggle {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    border: none;
-    background: #b30000;
-    color: #fff;
-    font-size: 26px;
-    cursor: pointer;
-    z-index: 9999;
+  body {
+    font-family: system-ui, Arial, sans-serif;
+    background: #0b0b0b;
+    color: #ffffff;
+    margin: 0;
+    padding: 20px;
   }
-
-  #chat {
-    position: fixed;
-    bottom: 90px;
-    right: 20px;
-    width: 360px;
-    max-height: 520px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 0 15px rgba(0,0,0,.3);
-    display: none;
-    flex-direction: column;
-    overflow: hidden;
-    z-index: 9999;
-  }
-
-  #header {
-    background: #b30000;
-    color: #fff;
-    padding: 12px;
-    font-weight: bold;
+  h2 {
+    color: #e10600;
     text-align: center;
   }
-
-  #body {
-    flex: 1;
-    padding: 10px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    font-size: 15px;
-  }
-
-  .bot { background:#eee; align-self:flex-start; }
-  .user { background:#b30000; color:#fff; align-self:flex-end; }
-
-  .msg {
-    padding: 8px 12px;
+  #chat {
+    max-width: 720px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #111;
     border-radius: 8px;
-    max-width: 80%;
   }
-
-  #input {
-    display: flex;
-    border-top: 1px solid #ccc;
+  .msg {
+    margin-bottom: 14px;
+    line-height: 1.5;
   }
-
-  #input input {
-    flex: 1;
+  .bot {
+    color: #ffb3b3;
+  }
+  .user {
+    color: #9ad1ff;
+    text-align: right;
+  }
+  input, button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 6px;
     border: none;
-    padding: 10px;
-    font-size: 14px;
-  }
-
-  #input button {
-    border: none;
-    padding: 10px 14px;
-    cursor: pointer;
     font-size: 16px;
   }
-
-  #mic { background:#444; color:#fff; }
-  #send { background:#b30000; color:#fff; }
+  button {
+    background: #e10600;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #ff2b2b;
+  }
 </style>
 </head>
 
 <body>
 
-<button id="toggle">💬</button>
+<h2>Red Herring Initiative – Complaint Intake</h2>
 
-<div id="chat">
-  <div id="header">Red Herring Hotline</div>
-  <div id="body"></div>
-  <div id="input">
-    <button id="mic">🎤</button>
-    <input id="text" placeholder="Type or speak…" />
-    <button id="send">➤</button>
-  </div>
-</div>
+<div id="chat"></div>
+
+<input id="input" placeholder="Type your response…" />
+<button onclick="submitAnswer()">Send</button>
 
 <script>
-/* ---------------- SAFE STATE ---------------- */
-const qs = [
-  "Welcome to the Red Herring Initiative Hotline. What is your full name?",
-  "What is the best phone number or email to reach you?",
-  "Which department is involved?",
-  "Please describe what happened.",
-  "Is anyone in immediate danger? Yes or No."
+const chat = document.getElementById("chat");
+const input = document.getElementById("input");
+
+const questions = [
+  "Hello, I am Helyah, your Red Herring Intake Assistant. What is your full name?",
+  "Please describe the incident you are reporting.",
+  "Which agency or officer was involved?",
+  "What was the date of the incident?",
+  "Where did the incident occur?",
+  "Do you believe your civil rights were violated?",
+  "Do you have evidence such as photos, videos, or witnesses?",
+  "What is your phone number so a director can contact you?",
+  "What is your email address?",
+  "Would you like a director to call you immediately?"
 ];
 
 let step = 0;
-const responses = {};
-const body = document.getElementById("body");
+const answers = [];
 
-/* ---------------- UI ---------------- */
-document.getElementById("toggle").onclick = () => {
-  const c = document.getElementById("chat");
-  c.style.display = c.style.display === "flex" ? "none" : "flex";
-};
-
-function add(text, who="bot") {
-  const d = document.createElement("div");
-  d.className = `msg ${who}`;
-  d.textContent = text;
-  body.appendChild(d);
-  body.scrollTop = body.scrollHeight;
-  if (who === "bot") speak(text);
+function addMessage(text, sender) {
+  const div = document.createElement("div");
+  div.className = "msg " + sender;
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
 }
 
-/* ---------------- SAFE TTS ---------------- */
-let voicesReady = false;
-
-function loadVoices() {
-  const v = speechSynthesis.getVoices();
-  if (v.length) voicesReady = true;
-}
-
-if ("speechSynthesis" in window) {
-  loadVoices();
-  speechSynthesis.onvoiceschanged = loadVoices;
-}
-
-function speak(text) {
-  if (!("speechSynthesis" in window) || !voicesReady) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "en-US";
-  speechSynthesis.speak(u);
-}
-
-/* ---------------- SAFE SPEECH RECOGNITION ---------------- */
-let rec = null;
-let listening = false;
-
-if ("webkitSpeechRecognition" in window) {
-  rec = new webkitSpeechRecognition();
-  rec.lang = "en-US";
-  rec.onresult = e => {
-    document.getElementById("text").value = e.results[0][0].transcript;
-  };
-  rec.onerror = e => console.warn("Speech error:", e.error);
-}
-
-document.getElementById("mic").onclick = () => {
-  if (!rec) {
-    alert("Speech recognition not supported on this browser.");
-    return;
+function askQuestion() {
+  if (step < questions.length) {
+    addMessage(questions[step], "bot");
+  } else {
+    addMessage(
+      "Thank you. Your intake is complete. A Red Herring Initiative director will review your complaint.",
+      "bot"
+    );
+    input.disabled = true;
   }
-  listening ? rec.stop() : rec.start();
-  listening = !listening;
-};
+}
 
-/* ---------------- SEND ---------------- */
-document.getElementById("send").onclick = () => {
-  const v = document.getElementById("text").value.trim();
-  if (!v) return;
+function submitAnswer() {
+  const value = input.value.trim();
+  if (!value) return;
 
-  add(v, "user");
-  responses[step] = v;
-  document.getElementById("text").value = "";
-
+  addMessage(value, "user");
+  answers.push(value);
+  input.value = "";
   step++;
-  step < qs.length
-    ? add(qs[step])
-    : add("Thank you. Your report has been received.");
-};
+  askQuestion();
+}
 
-/* ---------------- INIT ---------------- */
-add(qs[0]);
+// start intake
+askQuestion();
 </script>
 
 </body>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Red Herring Voice Intake (2025 Safe)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<style>
+  body {
+    font-family: system-ui, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+
+  #toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    background: #b30000;
+    color: #fff;
+    font-size: 26px;
+    cursor: pointer;
+    z-index: 9999;
+  }
+
+  #chat {
+    position: fixed;
+    bottom: 90px;
+    right: 20px;
+    width: 360px;
+    max-height: 520px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 9999;
+  }
+
+  #header {
+    background: #b30000;
+    color: #ffffff;
+    padding: 12px;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  #body {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 15px;
+  }
+
+  .msg {
+    padding: 8px 12px;
+    border-radius: 8px;
+    max-width: 80%;
+  }
+
+  .bot {
+    background: #eeeeee;
+    align-self: flex-start;
+  }
+
+  .user {
+    background: #b30000;
+    color: #ffffff;
+    align-self: flex-end;
+  }
+
+  #input {
+    display: flex;
+    border-top: 1px solid #cccccc;
+  }
+
+  #input input {
+    flex: 1;
+    border: none;
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  #input button {
+    border: none;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+
+  #mic {
+    background: #444444;
+    color: #ffffff;
+  }
+
+  #send {
+    background: #b30000;
+    color: #ffffff;
+  }
+</style>
+</head>
+
+<body>
+
+<button id="toggle">💬</button>
+
+<div id="chat">
+  <div id="header">Red Herring Hotline</div>
+  <div id="body"></div>
+  <div id="input">
+    <button id="mic">🎤</button>
+    <input id="text" placeholder="Type or speak…" />
+    <button id="send">➤</button>
+  </div>
+</div>
+
+<script>
+  const questions = [
+    "Welcome to the Red Herring Initiative Civil Justice Hotline. What is your full name?",
+    "What is the best phone number or email to reach you?",
+    "Which department is involved in your complaint?",
+    "Please describe what happened.",
+    "Is anyone in immediate danger? Yes or No."
+  ];
+
+  let step = 0;
+  const responses = {};
+  const body = document.getElementById("body");
+
+  function addMessage(text, who) {
+    const div = document.createElement("div");
+    div.className = "msg " + who;
+    div.textContent = text;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+    if (who === "bot") speak(text);
+  }
+
+  document.getElementById("toggle").onclick = function () {
+    const chat = document.getElementById("chat");
+    chat.style.display = chat.style.display === "flex" ? "none" : "flex";
+  };
+
+  // Text-to-speech (safe)
+  function speak(text) {
+    if (!window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    window.speechSynthesis.speak(u);
+  }
+
+  // Speech recognition (safe)
+  let recognition = null;
+  let listening = false;
+
+  if ("webkitSpeechRecognition" in window) {
+    recognition = new webkitSpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.onresult = function (e) {
+      document.getElementById("text").value = e.results[0][0].transcript;
+    };
+  }
+
+  document.getElementById("mic").onclick = function () {
+    if (!recognition) {
+      alert("Speech recognition is not supported in this browser.");
+      return;
+    }
+    listening ? recognition.stop() : recognition.start();
+    listening = !listening;
+  };
+
+  document.getElementById("send").onclick = function () {
+    const input = document.getElementById("text");
+    const value = input.value.trim();
+    if (!value) return;
+
+    addMessage(value, "user");
+    responses[step] = value;
+    input.value = "";
+
+    step++;
+    if (step < questions.length) {
+      addMessage(questions[step], "bot");
+    } else {
+      addMessage("Thank you. Your report has been received.", "bot");
+    }
+  };
+
+  // Start conversation
+  addMessage(questions[0], "bot");
+</script>
+
+</body>
+</html>

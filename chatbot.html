@@ -1,100 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Red Herring Initiative – Complaint Intake</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
-  body { font-family: system-ui, Arial, sans-serif; background:#0b0b0b; color:#fff; margin:0; padding:20px; }
-  h2 { color:#e10600; text-align:center; }
-  #chat { max-width:720px; margin:20px auto; padding:20px; background:#111; border-radius:8px; }
-  .msg { margin-bottom:14px; line-height:1.5; white-space:pre-wrap; }
-  .bot { color:#ffb3b3; }
-  .user { color:#9ad1ff; text-align:right; }
-  .row { max-width:720px; margin:0 auto; display:flex; gap:10px; }
-  input { flex:1; padding:12px; border-radius:6px; border:none; font-size:16px; }
-  button { width:140px; padding:12px; border-radius:6px; border:none; font-size:16px; background:#e10600; color:#fff; font-weight:700; cursor:pointer; }
-  button:hover { background:#ff2b2b; }
-  button:disabled { opacity:.6; cursor:not-allowed; }
+  body {
+    font-family: system-ui, Arial, sans-serif;
+    background:#0b0b0b;
+    color:#fff;
+    margin:0;
+    padding:20px;
+  }
+  h2 {
+    color:#e10600;
+    text-align:center;
+  }
+  #chat {
+    max-width:700px;
+    margin:20px auto;
+    background:#111;
+    padding:20px;
+    border-radius:8px;
+    overflow-y:auto;
+    height:60vh;
+  }
+  .bot { color:#e10600; margin-bottom:10px; }
+  .user { color:#fff; margin-bottom:10px; text-align:right; }
+  #inputBox {
+    max-width:700px;
+    margin:10px auto;
+    display:flex;
+    gap:10px;
+  }
+  input {
+    flex:1;
+    padding:12px;
+    border-radius:6px;
+    border:none;
+    font-size:16px;
+  }
+  button {
+    padding:12px 18px;
+    border:none;
+    border-radius:6px;
+    background:#e10600;
+    color:#fff;
+    font-weight:bold;
+    cursor:pointer;
+  }
 </style>
 </head>
 
 <body>
+
 <h2>Red Herring Initiative – Complaint Intake</h2>
 
 <div id="chat"></div>
 
-<div class="row">
-  <input id="input" placeholder="Type your response…" autocomplete="off" />
-  <button id="sendBtn" type="button">Send</button>
+<div id="inputBox">
+  <input id="input" placeholder="Type your answer here…" />
+  <button onclick="send()">Send</button>
 </div>
 
 <script>
-  const chat = document.getElementById("chat");
-  const input = document.getElementById("input");
-  const sendBtn = document.getElementById("sendBtn");
+const questions = [
+  "Hello, I am Helyah, your Red Herring Intake Assistant. What is your full name?",
+  "Please describe the incident you are reporting.",
+  "Which agency or officer was involved?",
+  "What was the date of the incident?",
+  "Where did the incident occur?",
+  "Do you believe your civil rights were violated?",
+  "Do you have any evidence such as photos, witnesses, or documents?",
+  "What is your phone number?",
+  "What is your email address?",
+  "Would you like a director to contact you immediately?"
+];
 
-  const questions = [
-    "Hello, I am Helyah, your Red Herring Intake Assistant. What is your full name?",
-    "Please describe the incident you are reporting.",
-    "Which agency or officer was involved?",
-    "What was the date of the incident?",
-    "Where did the incident occur?",
-    "Do you believe your civil rights were violated?",
-    "Do you have evidence such as photos, videos, or witnesses?",
-    "What is your phone number so a director can contact you?",
-    "What is your email address?",
-    "Would you like a director to call you immediately?"
-  ];
+let step = 0;
+const answers = [];
 
-  let step = 0;
-  const answers = [];
+const chat = document.getElementById("chat");
+const input = document.getElementById("input");
 
-  function addMessage(text, sender) {
-    const div = document.createElement("div");
-    div.className = "msg " + sender;
-    div.textContent = text;
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
+function bot(text) {
+  const div = document.createElement("div");
+  div.className = "bot";
+  div.innerText = "Helyah: " + text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function user(text) {
+  const div = document.createElement("div");
+  div.className = "user";
+  div.innerText = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function send() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  user(text);
+  answers.push(text);
+  input.value = "";
+  step++;
+
+  if (step < questions.length) {
+    setTimeout(() => bot(questions[step]), 400);
+  } else {
+    setTimeout(() => {
+      bot("Thank you. Your complaint has been recorded. A director will review this information shortly.");
+      console.log("INTAKE DATA:", answers);
+    }, 400);
   }
+}
 
-  function askQuestion() {
-    if (step < questions.length) {
-      addMessage(questions[step], "bot");
-      input.focus();
-      return;
-    }
-    addMessage("Thank you. Your intake is complete. A Red Herring Initiative director will review your complaint.", "bot");
-    input.disabled = true;
-    sendBtn.disabled = true;
-  }
-
-  function submitAnswer() {
-    const value = input.value.trim();
-    if (!value) return;
-
-    addMessage(value, "user");
-    answers.push(value);
-
-    input.value = "";
-    step++;
-
-    askQuestion();
-  }
-
-  // Button click
-  sendBtn.addEventListener("click", submitAnswer);
-
-  // ENTER key submits
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      submitAnswer();
-    }
-  });
-
-  // Start
-  askQuestion();
+bot(questions[0]);
 </script>
+
 </body>
 </html>

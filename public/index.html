@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Red Herring Initiative – Complaint Intake</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f6f6f6;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    #chat {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      height: 420px;
+      overflow-y: auto;
+      margin-bottom: 12px;
+      background: #fafafa;
+    }
+
+    .msg {
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .bot {
+      color: #111;
+    }
+
+    .user {
+      text-align: right;
+      color: #0056b3;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 12px 16px;
+      border-radius: 6px;
+      border: none;
+      background: #111;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:disabled {
+      background: #777;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Red Herring Initiative – Complaint Intake</h2>
+
+  <div id="chat"></div>
+
+  <div class="controls">
+    <input id="input" placeholder="Type your response…" />
+    <button onclick="send()">Send</button>
+    <button onclick="startMic()">🎤</button>
+  </div>
+</div>
+
+<script>
+  const chat = document.getElementById("chat");
+  const input = document.getElementById("input");
+
+  const questions = [
+    "Hello, I am Helyah, your Red Herring Intake Assistant. What is your full name?",
+    "Please describe the incident you are reporting.",
+    "Which agency or officer was involved?",
+    "What was the date of the incident?",
+    "Where did the incident occur?",
+    "Do you believe your civil rights were violated under 18 USC 242?",
+    "Do you have evidence such as photos, witnesses, or documents?",
+    "What is your phone number so a director can contact you?",
+    "What is your email address?",
+    "Would you like a live director to call you immediately?"
+  ];
+
+  let step = 0;
+
+  function addBot(text) {
+    const div = document.createElement("div");
+    div.className = "msg bot";
+    div.innerHTML = "<b>Helyah:</b> " + text;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    speak(text);
+  }
+
+  function addUser(text) {
+    const div = document.createElement("div");
+    div.className = "msg user";
+    div.innerHTML = "<b>You:</b> " + text;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function send() {
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+    addUser(text);
+
+    // If user asks a question, answer first
+    if (text.toLowerCase().includes("18 usc 242")) {
+      addBot(
+        "18 U.S.C. § 242 is a federal law that makes it a crime for someone acting under color of law—such as a police officer or government official—to willfully violate a person’s constitutional rights. This includes actions like excessive force, unlawful detention, or abuse of authority. This is general information, not legal advice."
+      );
+      return;
+    }
+
+    step++;
+    if (step < questions.length) {
+      setTimeout(() => addBot(questions[step]), 600);
+    } else {
+      setTimeout(() => addBot(
+        "Thank you. Your complaint has been submitted to the Red Herring Initiative. A director may contact you after review."
+      ), 600);
+    }
+  }
+
+  // TEXT TO SPEECH
+  function speak(text) {
+    if (!window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1;
+    window.speechSynthesis.speak(u);
+  }
+
+  // SPEECH TO TEXT (auto stops when user finishes)
+  function startMic() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition not supported on this device.");
+      return;
+    }
+
+    const rec = new SpeechRecognition();
+    rec.lang = "en-US";
+    rec.interimResults = false;
+
+    rec.onresult = e => {
+      input.value = e.results[0][0].transcript;
+      send();
+    };
+
+    rec.start();
+  }
+
+  // Start conversation
+  addBot(questions[0]);
+</script>
+
+</body>
+  </html>

@@ -2,69 +2,94 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Red Herring Initiative – Complaint Intake</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Red Herring Initiative – Confidential Intake</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
-  body {
-    font-family: system-ui, Arial, sans-serif;
-    background:#0b0b0b;
-    color:#fff;
-    margin:0;
-    padding:20px;
-  }
-  h2 {
-    color:#e10600;
-    text-align:center;
-  }
-  #chat {
-    max-width:700px;
-    margin:20px auto;
-    background:#111;
-    padding:20px;
-    border-radius:8px;
-    overflow-y:auto;
-    height:60vh;
-  }
-  .bot { color:#e10600; margin-bottom:10px; }
-  .user { color:#fff; margin-bottom:10px; text-align:right; }
-  #inputBox {
-    max-width:700px;
-    margin:10px auto;
-    display:flex;
-    gap:10px;
-  }
-  input {
-    flex:1;
-    padding:12px;
-    border-radius:6px;
-    border:none;
-    font-size:16px;
-  }
-  button {
-    padding:12px 18px;
-    border:none;
-    border-radius:6px;
-    background:#e10600;
-    color:#fff;
-    font-weight:bold;
-    cursor:pointer;
-  }
+body {
+  font-family: system-ui, Arial, sans-serif;
+  background: #0b0b0b;
+  color: #fff;
+  margin: 0;
+  padding: 20px;
+}
+h1 {
+  color: #e10600;
+}
+#chat {
+  max-width: 800px;
+  margin: auto;
+  background: #111;
+  padding: 20px;
+  border-radius: 8px;
+}
+.message {
+  margin-bottom: 12px;
+}
+.bot {
+  color: #ffb3b3;
+}
+.user {
+  color: #cce0ff;
+}
+input, button {
+  padding: 10px;
+  font-size: 16px;
+}
+#inputArea {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+button {
+  background: #e10600;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+button:hover {
+  background: #ff2b2b;
+}
+.notice {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-bottom: 10px;
+}
 </style>
 </head>
 
 <body>
 
-<h2>Red Herring Initiative – Complaint Intake</h2>
+<div id="chat">
+  <h1>Confidential Complaint Intake</h1>
 
-<div id="chat"></div>
+  <div class="notice">
+    🔒 This intake is confidential. Information entered here is protected and
+    is not shared publicly. This system will not disclose other complaints,
+    internal security details, or private organizational information.
+  </div>
 
-<div id="inputBox">
-  <input id="input" placeholder="Type your answer here…" />
-  <button onclick="send()">Send</button>
+  <div id="messages"></div>
+
+  <div id="inputArea">
+    <input id="userInput" placeholder="Type your response…" style="flex:1" />
+    <button onclick="send()">Send</button>
+  </div>
 </div>
 
 <script>
+/* ===============================
+   CONFIDENTIALITY & SECURITY RULES
+   ===============================
+
+   - This chatbot SHALL NOT disclose:
+     • Any other person's data
+     • Organizational security details
+     • Internal systems or storage methods
+   - Legal/statute explanations are allowed ONLY AFTER intake completion
+   - All stored data is local-only (browser scoped)
+*/
+
 const questions = [
   "Hello, I am Helyah, your Red Herring Intake Assistant. What is your full name?",
   "Please describe the incident you are reporting.",
@@ -79,48 +104,80 @@ const questions = [
 ];
 
 let step = 0;
-const answers = [];
+let intakeComplete = false;
 
-const chat = document.getElementById("chat");
-const input = document.getElementById("input");
+const complaintId = "RH-" + Date.now();
+let record = { complaintId };
 
-function bot(text) {
+/* UI helpers */
+function addMessage(text, cls) {
   const div = document.createElement("div");
-  div.className = "bot";
-  div.innerText = "Helyah: " + text;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function user(text) {
-  const div = document.createElement("div");
-  div.className = "user";
+  div.className = "message " + cls;
   div.innerText = text;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+  document.getElementById("messages").appendChild(div);
+  div.scrollIntoView();
 }
+
+/* Initial message */
+addMessage("Helyah: " + questions[0], "bot");
 
 function send() {
+  const input = document.getElementById("userInput");
   const text = input.value.trim();
   if (!text) return;
 
-  user(text);
-  answers.push(text);
+  addMessage("You: " + text, "user");
   input.value = "";
-  step++;
 
-  if (step < questions.length) {
-    setTimeout(() => bot(questions[step]), 400);
-  } else {
-    setTimeout(() => {
-      bot("Thank you. Your complaint has been recorded. A director will review this information shortly.");
-      console.log("INTAKE DATA:", answers);
-    }, 400);
+  /* Intake phase */
+  if (!intakeComplete) {
+    record["q" + step] = text;
+    step++;
+
+    if (step < questions.length) {
+      addMessage("Helyah: " + questions[step], "bot");
+    } else {
+      intakeComplete = true;
+
+      /* Secure local storage */
+      localStorage.setItem(
+        "redHerringComplaint_" + complaintId,
+        JSON.stringify(record)
+      );
+
+      addMessage(
+        "Helyah: Thank you. Your complaint has been securely recorded. " +
+        "A director will review it. You may now ask general informational questions.",
+        "bot"
+      );
+    }
+    return;
   }
+
+  /* Post-intake informational mode */
+  handlePostIntakeQuestion(text);
 }
 
-bot(questions[0]);
+function handlePostIntakeQuestion(text) {
+  const lower = text.toLowerCase();
+
+  if (lower.includes("18 usc 242")) {
+    addMessage(
+      "Helyah: 18 U.S.C. § 242 is a federal civil rights statute that makes it a crime " +
+      "for a person acting under color of law to willfully deprive someone of rights " +
+      "protected by the Constitution or federal law. This is general information, not legal advice.",
+      "bot"
+    );
+    return;
+  }
+
+  addMessage(
+    "Helyah: I can provide general information, but I cannot give legal advice or " +
+    "discuss internal organizational security matters.",
+    "bot"
+  );
+}
 </script>
 
 </body>
-</html>
+  </html>

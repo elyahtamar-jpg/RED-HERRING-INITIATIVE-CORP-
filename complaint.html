@@ -1,8 +1,8 @@
 "use client";
+
 import { useState, useEffect, useRef } from "react";
 
 export default function HelyahBot() {
-
   const questions = [
     "What is your full name?",
     "What is your phone number?",
@@ -13,75 +13,58 @@ export default function HelyahBot() {
     "Where did this occur?",
     "Do you believe your rights under 18 USC 242 were violated?",
     "Do you have evidence?",
-    "Do you want a live director to call you?"
+    "Do you want a live director to call you?",
   ];
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
-
   const recognitionRef = useRef(null);
-  const [autoListen, setAutoListen] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
 
-  // ------------------ TEXT TO SPEECH ------------------
-  const speak = (text, callback = null) => {
+  /* ---------------- TEXT TO SPEECH ---------------- */
+  const speak = (text) => {
+    if (!window.speechSynthesis) return;
     const utter = new SpeechSynthesisUtterance(text);
     utter.rate = 1;
     utter.pitch = 1;
-
-    utter.onend = () => {
-      if (callback) callback();
-    };
-
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utter);
   };
 
-  // ------------------ SPEECH TO TEXT (HANDS FREE) ------------------
+  /* ---------------- INIT SPEECH RECOGNITION ---------------- */
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (typeof window === "undefined") return;
 
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.lang = "en-US";
-        recognition.interimResults = false;
-        recognition.continuous = true;  // 🔥 hands-free listening ON
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
 
-        recognition.onresult = (event) => {
-          const transcript = event.results[event.results.length - 1][0].transcript;
-          setInput(transcript);
+    if (!SpeechRecognition) return;
 
-          // Auto-send spoken answer
-          setTimeout(() => send(true), 300);
-        };
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.continuous = false; // ✅ REQUIRED FOR ANDROID
 
-        recognition.onend = () => {
-          if (autoListen) recognition.start(); // 🔥 auto-restart listening
-        };
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(transcript);
+    };
 
-        recognitionRef.current = recognition;
-      }
-    }
+    recognitionRef.current = recognition;
   }, []);
 
-  const startListening = () => {
-    if (recognitionRef.current) {
-      setAutoListen(true);
-      recognitionRef.current.start();
-    }
-  };
+  /* ---------------- SEND ANSWER ---------------- */
+  const send = async () => {
+    if (!input.trim()) return;
 
-  // ------------------ SEND MESSAGE ------------------
-  const send = async (voiceTriggered = false) => {
-    if (!voiceTriggered && !input.trim()) return;
+    const updatedAnswers = {
+      ...answers,
+      [questions[step]]: input,
+    };
 
-    const finalInput = input;
-    setMessages((prev) => [...prev, { sender: "user", text: finalInput }]);
-
-    const updatedAnswers = { ...answers, [questions[step]]: finalInput };
+    setMessages((m) => [...m, { sender: "user", text: input }]);
     setAnswers(updatedAnswers);
     setInput("");
 
@@ -90,99 +73,61 @@ export default function HelyahBot() {
 
     if (next < questions.length) {
       const nextQ = questions[next];
-
-      setMessages((prev) => [...prev, { sender: "bot", text: nextQ }]);
-
-      // Speak the next question THEN start listening again
-      speak(nextQ, () => {
-        if (autoListen && recognitionRef.current) {
-          recognitionRef.current.start(); // 🔥 auto listen after each question
-        }
-      });
-
+      setMessages((m) => [...m, { sender: "bot", text: nextQ }]);
+      speak(nextQ);
     } else {
-      const finalMsg = "Thank you. Your complaint has been recorded and forwarded.";
-
-      setMessages((prev) => [...prev, { sender: "bot", text: finalMsg }]);
+      const finalMsg =
+        "Thank you. Your complaint has been recorded for review.";
+      setMessages((m) => [...m, { sender: "bot", text: finalMsg }]);
       speak(finalMsg);
 
-      await fetch("/api/complaint", {
+      await fetch("/api/complaint/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedAnswers),
       });
-
-      if (recognitionRef.current) recognitionRef.current.stop();
     }
   };
 
-  // ------------------ START BOT ------------------
+  /* ---------------- START VOICE (USER TAP REQUIRED) ---------------- */
+  const startVoice = () => {
+    if (!recognitionRef.current) return;
+    setVoiceEnabled(true);
+    recognitionRef.current.start();
+  };
+
+  /* ---------------- INITIAL GREETING ---------------- */
   useEffect(() => {
     if (messages.length === 0) {
-      const greeting = "Hello, I am Helyah. Let's begin your intake.";
-
       setMessages([
-        { sender: "bot", text: greeting },
-        { sender: "bot", text: questions[0] }
+        { sender: "bot", text: "Hello, I am Helyah." },
+        { sender: "bot", text: questions[0] },
       ]);
-
-      speak(greeting, () => {
-        speak(questions[0], () => {
-          if (recognitionRef.current) recognitionRef.current.start(); // 🔥 Start continuous listening immediately
-        });
-      });
+      speak("Hello, I am Helyah.");
+      speak(questions[0]);
     }
   }, []);
 
   return (
-    <div style={{ width: "100%", maxWidth: 500 }}>
-      <div
-        style={{
-          height: 320,
-          overflowY: "auto",
-          padding: 10,
-          border: "1px solid #ccc",
-          background: "white"
-        }}
-      >
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            style={{
-              margin: "8px 0",
-              textAlign: m.sender === "user" ? "right" : "left"
-            }}
-          >
-            <b>{m.sender === "user" ? "You" : "Helyah"}:</b> {m.text}
-          </div>
-        ))}
-      </div>
+    <div style={{ color: "white" }}>
+      {messages.map((m, i) => (
+        <p key={i}>
+          <strong>{m.sender === "user" ? "You" : "Helyah"}:</strong>{" "}
+          {m.text}
+        </p>
+      ))}
 
       <input
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Type your answer..."
-        style={{
-          width: "100%",
-          padding: 10,
-          marginTop: 10,
-          border: "1px solid #ccc"
-        }}
+        placeholder="Type your answer…"
+        style={{ width: "100%", padding: 10 }}
       />
 
-      <button
-        onClick={startListening}
-        style={{
-          marginTop: 10,
-          width: "100%",
-          padding: 10,
-          background: "#222",
-          color: "white",
-          fontWeight: "bold",
-          cursor: "pointer"
-        }}
-      >
-        🎤 Enable Voice Mode
+      <button onClick={send}>Send</button>
+
+      <button onClick={startVoice}>
+        🎤 {voiceEnabled ? "Voice Enabled" : "Enable Voice Mode"}
       </button>
     </div>
   );

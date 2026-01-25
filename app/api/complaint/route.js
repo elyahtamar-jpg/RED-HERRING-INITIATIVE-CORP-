@@ -1,4 +1,4 @@
-import { kv } from "@upstash/redis";
+import { Redis } from "@upstash/redis";
 import OpenAI from "openai";
 
 const openai = new OpenAI({

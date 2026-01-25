@@ -1,76 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Red Herring Initiative</title>
-<style>
-  body {
-    font-family: system-ui, Arial, sans-serif;
-    background: #0b0b0b url('public/Dec_19_2025_10_11_35.jpg') no-repeat center top;
-    background-size: contain; /* adjust to fit logo nicely */
-    color: #ffffff;
-    margin: 0;
-    padding: 40px;
-    text-align: center;
-    min-height: 100vh;
-  }
-  h1 {
-    color: #e10600;
-    margin-bottom: 10px;
-    text-shadow: 1px 1px 2px #000;
-  }
-  h2 {
-    color: #ffffff;
-    margin-top: 20px;
-  }
-  p {
-    max-width: 700px;
-    margin: 10px auto 20px;
-    line-height: 1.6;
-    text-shadow: 0 0 2px #000;
-  }
-  a.button {
-    display: inline-block;
-    margin-top: 20px;
-    padding: 14px 22px;
-    background: #e10600;
-    color: #fff;
-    text-decoration: none;
-    border-radius: 6px;
-    font-weight: bold;
-    transition: background 0.3s;
-  }
-  a.button:hover {
-    background: #ff2b2b;
-  }
-  .content {
-    background: rgba(0,0,0,0.6);
-    padding: 20px;
-    border-radius: 8px;
-    display: inline-block;
-  }
-</style>
-</head>
-<body>
-
-<div class="content">
-  <h1>Red Herring Initiative</h1>
-  <h2>Civil Justice Advocacy Corporation</h2>
-  <p>
-    Exposing injustice. Empowering communities. Delivering accountability.
-  </p>
-  <p>
-    The Red Herring Initiative Corporation is a Florida-based civil justice advocacy organization dedicated to documenting civil rights violations, systemic misconduct, and government abuse. We assist the public with structured complaint intake, evidence documentation, and accountability reporting.
-  </p>
-  <p>
-    We do not provide legal representation. We provide advocacy, documentation, and oversight support.
-  </p>
-  <a href="https://redherringciviljustice.com/complaint.html" class="btn">FILE A COMPLAINT</a>
-  <p style="margin-top: 20px; font-size: 0.85em; color: #ccc;">
-    This platform operates in secure static mode. No data is stored, tracked, or shared on this page.
-  </p>
-</div>
-
-</body>
-</html>
+export default function Home() {
+  return (
+    <div style={{ padding: 20, fontFamily: "Arial, sans-serif" }}>
+      <h1>Red Herring Initiative Corp</h1>
+      <p>Exposing Injustice. Empowering Communities. Delivering Accountability.</p>
+      <a href="/complaint">File a Complaint</a>
+    </div>
+  );
+}

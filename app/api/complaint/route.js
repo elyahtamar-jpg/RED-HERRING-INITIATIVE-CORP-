@@ -74,3 +74,12 @@ Respond ONLY in JSON:
     );
   }
 }
+export async function GET() {
+  return new Response(
+    JSON.stringify({
+      status: "ok",
+      message: "Complaint intake endpoint. POST requests only."
+    }),
+    { status: 200 }
+  );
+}
